@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#101315"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Community Tracker"/>
+<title>COMMUNITY TRACKER</title>
+<link rel="icon" type="image/png" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png"/>
+<link rel="apple-touch-icon" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png"/>
+<link rel="manifest" id="manifestLink"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/400.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/500.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/600.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/700.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-mono@5.1.1/400.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-mono@5.1.1/700.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.css"/>
+<style>
+:root{
+  --bg:#101315; --panel:#181c20; --panel2:#131619; --line:#2a3037; --line2:#414a54;
+  --text:#e7eaed; --muted:#8a939d;
+  --accent:#ffb000; --accentTxt:#ffb000; --accentInk:#fff;
+  --hot:#e5484d; --ok:#42a85d; --blue:#6aa7e0;
+  --mapBg:#0d1012;
+  --shadow:3px 3px 0 rgba(0,0,0,.30); --shadowSm:2px 2px 0 rgba(0,0,0,.30);
+  --safeB:env(safe-area-inset-bottom,0px);
+}
+html[data-theme="light"]{
+  --bg:#d9d6ce; --panel:#f1efe9; --panel2:#e6e3db; --line:#b5b0a3; --line2:#7d776a;
+  --text:#191b1d; --muted:#5c6167;
+  --accent:#ffb000; --accentTxt:#7a5200; --accentInk:#151006;
+  --hot:#bd2b31; --ok:#2c7a42; --blue:#2f6ea8;
+  --mapBg:#cfccc4;
+  --shadow:3px 3px 0 rgba(0,0,0,.13); --shadowSm:2px 2px 0 rgba(0,0,0,.13);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;border-radius:0!important}
+html,body{height:100%}
+body{font-family:'Oswald',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;
+  display:flex;flex-direction:column;overscroll-behavior:none}
+button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:var(--accent);color:var(--accentInk)}
+.mono{font-family:'Space Mono',monospace}
+.hidden{display:none!important}
+
+#boot{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px}
+#boot.done{opacity:0;visibility:hidden;transition:.5s}
+.bLogo{font-size:20px;font-weight:600;letter-spacing:.3em;color:var(--text)}
+.bLogo b{color:var(--accentTxt)}
+.bSub{font:400 10px 'Space Mono';letter-spacing:.28em;color:var(--muted)}
+.cursor{animation:blink 1s steps(2) infinite;color:var(--accentTxt)}
+@keyframes blink{50%{opacity:0}}
+
+header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);border-bottom:1px solid var(--line2)}
+.brand{display:flex;align-items:center;gap:12px;padding:8px 16px;border-right:1px solid var(--line)}
+.mark{width:38px;height:38px;background:var(--accent);color:var(--accentInk);display:grid;place-items:center;
+  font-size:20px;flex:0 0 38px}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.14em;line-height:1.05}
+.brand p{font:400 9px 'Space Mono';letter-spacing:.18em;color:var(--muted);margin-top:3px;text-transform:uppercase}
+.hdrRight{margin-left:auto;display:flex;align-items:stretch}
+.modeSwitcher{display:flex;align-items:stretch;border-left:1px solid var(--line)}
+.modeBtn{background:var(--panel);border:none;border-left:1px solid var(--line);color:var(--muted);
+  padding:4px 16px;font:700 10px 'Space Mono';letter-spacing:.14em;text-transform:uppercase;
+  transition:.12s;min-height:100%}
+.modeBtn:hover{color:var(--text);background:var(--panel2)}
+.modeBtn.active{color:var(--accentInk);background:var(--accent);border-color:var(--accent)}
+.countBox{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 18px;
+  border-left:1px solid var(--line);min-width:86px}
+.countBox b{font:700 18px 'Space Mono';color:var(--accentTxt)}
+.countBox span{font-size:9px;letter-spacing:.22em;color:var(--muted)}
+.syncBox{display:flex;align-items:center;gap:9px;padding:4px 16px;border-left:1px solid var(--line)}
+.syncTag{font:700 10px 'Space Mono';letter-spacing:.14em;padding:4px 8px;border:1px solid var(--line2)}
+.syncTag.live{color:var(--ok);border-color:var(--ok)}
+.syncTag.local{color:var(--accentTxt);border-color:var(--accentTxt)}
+.led{width:8px;height:8px;background:var(--ok);animation:blink 1.6s steps(2) infinite;flex:0 0 8px}
+#themeBtn{width:54px;border:none;border-left:1px solid var(--line);background:var(--panel2);color:var(--text);
+  font:700 14px 'Space Mono';transition:.12s}
+#themeBtn:hover{background:var(--line)}
+.hazard{flex:0 0 6px;background:repeating-linear-gradient(-45deg,var(--accent) 0 10px,var(--accentInk) 10px 20px)}
+
+.corners{position:relative}
+.corners::before,.corners::after{content:'';position:absolute;width:12px;height:12px;
+  border:2px solid var(--accent);pointer-events:none;z-index:6}
+.corners::before{top:5px;left:5px;border-right:none;border-bottom:none}
+.corners::after{bottom:5px;right:5px;border-left:none;border-top:none}
+
+#mapWrap{position:relative;flex:1;min-height:0}
+#map{position:absolute;inset:0;background:var(--mapBg)}
+#map.targeting,#map.targeting .leaflet-container{cursor:crosshair!important}
+
+#statusBar{position:absolute;left:0;right:0;bottom:0;z-index:905;height:26px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 12px;background:var(--panel);border-top:1px solid var(--line2);
+  font:400 10px 'Space Mono';letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+#statusBar b{color:var(--accentTxt);font-weight:700}
+
+.layers{position:absolute;top:12px;right:12px;z-index:950;display:flex;flex-direction:column;gap:6px}
+.layerBtn{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);
+  padding:10px 15px;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  transition:transform .12s,background .12s,color .12s;box-shadow:var(--shadowSm)}
+.layerBtn:hover{color:var(--text);transform:translate(-1px,-1px)}
+.layerBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
+.layerBtn.active{color:var(--accentInk);background:var(--accent);border-color:var(--accent)}
+.layerBtn .sq{width:8px;height:8px;background:currentColor;flex:0 0 8px}
+.layerBtn.na{opacity:.5}
+
+#hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:980;display:flex;gap:10px;align-items:center;
+  background:var(--panel);border:2px solid var(--accent);color:var(--text);padding:10px 14px;font-size:13px;font-weight:500;
+  letter-spacing:.08em;box-shadow:var(--shadow);max-width:min(94%,580px)}
+#hint .hBtn{border:1px solid var(--line2);padding:9px 13px;font-size:11px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;white-space:nowrap;background:var(--panel2);color:var(--text);transition:.12s}
+#hint .hBtn:active{transform:translate(1px,1px)}
+#hint .geo{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+
+#panel{position:absolute;top:12px;left:12px;bottom:38px;width:352px;z-index:1000;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shadow);overflow:hidden}
+#grab{display:none;width:30px;height:3px;background:var(--line2);margin:8px auto 0}
+.pHead{padding:14px 14px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.statRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mini{background:var(--panel2);border:1px solid var(--line);padding:8px 4px;text-align:center;position:relative}
+.mini::before{content:'';position:absolute;top:4px;left:4px;width:5px;height:5px;background:var(--accent)}
+.mini b{display:block;font:700 17px 'Space Mono';color:var(--accentTxt)}
+.mini span{font-size:8.5px;letter-spacing:.2em;color:var(--muted)}
+#reportBtn{width:100%;margin-top:12px;border:2px solid var(--accent);padding:13px 12px;min-height:50px;
+  font-weight:600;font-size:15px;letter-spacing:.22em;color:var(--accentInk);background:var(--accent);
+  box-shadow:var(--shadowSm);transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
+#reportBtn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.3)}
+#reportBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
+#cdChip{font:700 12px 'Space Mono';background:var(--accentInk);color:var(--accent);padding:2px 7px}
+.panelScroll{flex:1;overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.panelScroll::-webkit-scrollbar{width:6px}.panelScroll::-webkit-scrollbar-thumb{background:var(--line2)}
+.feedTitle{padding:14px 14px 8px;font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--muted);
+  display:flex;justify-content:space-between;align-items:center;text-transform:uppercase}
+.ftL{display:flex;align-items:center;gap:8px}
+.feedItem{display:flex;flex-direction:column;gap:4px;padding:10px 14px 10px 12px;border-bottom:1px solid var(--line);
+  border-left:3px solid var(--muted);animation:fadeIn .25s ease;transition:background .15s}
+.feedItem:hover{background:var(--panel2)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.feedItem.flagged{opacity:.4}
+.feedItem.boosted{background:rgba(255,176,0,.06)}
+.fTop{display:flex;align-items:baseline;gap:8px}
+.fTop b{font-size:13.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.fTop time{font:400 10px 'Space Mono';color:var(--muted);margin-left:auto;white-space:nowrap}
+.fLoc{font:400 11px 'Space Mono';color:var(--muted)}
+.fMeta{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center}
+.exp{font:700 9.5px 'Space Mono';padding:3px 7px;border:1px solid var(--blue);color:var(--blue);letter-spacing:.04em}
+.exp.warn{border-color:var(--accentTxt);color:var(--accentTxt)}
+.vBtn{border:1px solid var(--line2);background:var(--panel2);color:var(--muted);padding:4px 8px;
+  font:700 10px 'Space Mono';display:flex;align-items:center;gap:5px;transition:.12s;min-height:24px}
+.vBtn:hover{color:var(--text)}
+.vBtn:active{transform:translate(1px,1px)}
+.vBtn.active{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+.vBtn.up:hover{color:var(--ok);border-color:var(--ok)}
+.vBtn.down:hover{color:var(--hot);border-color:var(--hot)}
+.vBtn.share:hover{color:var(--accentTxt);border-color:var(--accentTxt)}
+.fNote{font-size:12px;font-weight:400;color:var(--text);opacity:.85;margin-top:3px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flagTag{font:700 9px 'Space Mono';color:var(--hot);border:1px solid var(--hot);padding:3px 7px}
+.empty{padding:40px 22px;text-align:center;color:var(--muted)}
+.eGlyph{font-size:30px;color:var(--accentTxt);margin-bottom:12px}
+.empty b{display:block;font-size:13px;font-weight:600;letter-spacing:.22em;color:var(--text);margin-bottom:8px}
+.empty p{font:400 10.5px 'Space Mono';line-height:1.8}
+.footNote{padding:10px 14px calc(10px + var(--safeB));font:400 9px 'Space Mono';color:var(--muted);line-height:1.7;border-top:1px solid var(--line)}
+
+#radarBar{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);z-index:970;display:flex;align-items:center;gap:11px;
+  background:var(--panel);border:1px solid var(--line2);padding:9px 13px;box-shadow:var(--shadow);max-width:94%}
+#radarPlay{width:36px;height:36px;border:1px solid var(--line2);background:var(--panel2);color:var(--accentTxt);font-size:11px}
+#radarPlay:active{transform:translate(1px,1px)}
+#radarScrub{width:168px;accent-color:var(--accent)}
+#radarTime{font:700 12px 'Space Mono';color:var(--accentTxt);min-width:62px;text-align:center}
+.rTag{font:700 8.5px 'Space Mono';letter-spacing:.12em;padding:3px 7px;border:1px solid var(--line2);color:var(--muted);text-transform:uppercase}
+.rTag.now{border-color:var(--accentTxt);color:var(--accentTxt)}
+.opWrap{display:flex;align-items:center;gap:7px;font:400 9px 'Space Mono';color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+#radarOpacity{width:72px;accent-color:var(--accent)}
+
+#legend{position:absolute;right:12px;bottom:44px;z-index:910;background:var(--panel);border:1px solid var(--line2);
+  padding:12px 14px;box-shadow:var(--shadowSm);width:204px}
+#legend h4{font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
+.grad{height:8px;background:linear-gradient(90deg,#4c0d0d,#b91c1c,#ef4444,#f97316,#fbbf24,#fef08a)}
+.gradLbls{display:flex;justify-content:space-between;font:400 9px 'Space Mono';color:var(--muted);margin-top:4px}
+#legend p{font:400 9.5px 'Space Mono';color:var(--muted);margin-top:8px;line-height:1.6;border-top:1px solid var(--line);padding-top:7px}
+
+/* Outage-specific legend */
+#outageLegend{display:none}
+#outageLegend h4{font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
+.outageKey{display:flex;align-items:center;gap:8px;margin-bottom:6px;font:400 10px 'Space Mono';color:var(--text)}
+.outageKey .dot{width:10px;height:10px;flex:0 0 10px}
+.outageKey .dot.on{background:var(--ok)}
+.outageKey .dot.off{background:var(--hot)}
+.outageKey .dot.unknown{background:#888}
+#outageLegend p{font:400 9.5px 'Space Mono';color:var(--muted);line-height:1.6}
+
+#modal{position:absolute;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(8,10,12,.75)}
+.modalCard{position:relative;width:min(430px,calc(100vw - 28px));max-height:calc(100vh - 48px);overflow-y:auto;
+  background:var(--panel);border:2px solid var(--line2);padding:24px;box-shadow:var(--shadow);animation:pop .2s ease}
+@keyframes pop{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.modalCard h3{font-size:18px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.modalCard h3 .tick{width:12px;height:12px;background:var(--accent);flex:0 0 12px}
+#modalClose{position:absolute;top:14px;right:14px;width:34px;height:34px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--muted);font-size:12px}
+#modalClose:hover{color:var(--text)}
+.lbl{display:block;font-size:9.5px;font-weight:600;letter-spacing:.26em;color:var(--muted);margin:18px 0 8px;text-transform:uppercase}
+#locBox{border:1px dashed var(--line2);padding:10px 12px;font:400 11px 'Space Mono';color:var(--muted);line-height:1.6;margin-top:16px}
+#locBox.has{color:var(--text);border-color:var(--accent)}
+.statusGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stChip{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);
+  padding:12px 11px;font-size:12px;font-weight:500;letter-spacing:.1em;transition:.12s;min-height:48px;text-align:left;text-transform:uppercase}
+.stChip:active{transform:translate(1px,1px)}
+.stChip .d{width:9px;height:9px;flex:0 0 9px}
+.stChip small{margin-left:auto;font:700 9px 'Space Mono';color:var(--muted)}
+.stChip.sel{border-color:var(--accent);background:rgba(255,176,0,.1)}
+.stChip.sel small{color:var(--accentTxt)}
+.mIn{width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--text);
+  padding:12px;font:400 13px 'Space Mono';outline:none;transition:.12s}
+.mIn:focus{border-color:var(--accent)}
+#submitBtn{width:100%;margin-top:20px;border:2px solid var(--accent);padding:15px;min-height:52px;
+  font-weight:600;font-size:15px;letter-spacing:.24em;color:var(--accentInk);background:var(--accent);
+  box-shadow:var(--shadowSm);transition:.12s;text-transform:uppercase}
+#submitBtn:disabled{background:var(--panel2);border-color:var(--line);color:var(--muted);box-shadow:none;cursor:not-allowed}
+#submitBtn:not(:disabled):hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.3)}
+#submitBtn:not(:disabled):active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
+#cdNote{margin-top:9px;font:400 9.5px 'Space Mono';color:var(--muted);text-align:center;line-height:1.6}
+.expireHint{margin-top:7px;font:400 9.5px 'Space Mono';color:var(--muted);text-align:center;line-height:1.6}
+
+#toasts{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:4000;display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none}
+.toast{background:var(--panel);border:1px solid var(--line2);color:var(--text);padding:10px 16px;font:600 12px 'Space Mono';
+  letter-spacing:.1em;box-shadow:var(--shadow);animation:slideIn .25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.toast.err{border-color:var(--hot);color:var(--hot)}
+.toast.ok{border-color:var(--ok);color:var(--ok)}
+
+@media (max-width:768px){
+  #panel{left:0;right:0;top:auto;bottom:var(--safeB);width:100%;max-height:60vh;display:none}
+  #panel.open{display:flex}
+  #grab{display:block}
+  .brand h1{font-size:14px}
+  .countBox{padding:4px 10px;min-width:70px}
+  .countBox b{font-size:16px}
+  .syncBox{padding:4px 10px}
+  #themeBtn{width:48px}
+  #legend{right:8px;bottom:80px;width:180px;padding:10px}
+  #statusBar{bottom:0;font-size:9px}
+}
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="bLogo">COMMUNITY<b>TRACKER</b></div>
+  <div class="bSub">LOADING SYSTEMS<span class="cursor">_</span></div>
+</div>
+
+<header>
+  <div class="brand">
+    <div class="mark">⚡</div>
+    <div>
+      <h1>COMMUNITY TRACKER</h1>
+      <p>Real-time Community Monitoring</p>
+    </div>
+  </div>
+  <div class="hdrRight">
+    <div class="modeSwitcher">
+      <button class="modeBtn active" data-mode="trucks">TRUCKS</button>
+      <button class="modeBtn" data-mode="outages">OUTAGES</button>
+    </div>
+    <div class="countBox">
+      <b id="totalCount">0</b>
+      <span>REPORTS</span>
+    </div>
+    <div class="syncBox">
+      <div class="led"></div>
+      <div class="syncTag live">LIVE</div>
+    </div>
+    <button id="themeBtn" aria-label="Toggle theme">◐</button>
+  </div>
+  <div class="hazard"></div>
+</header>
+
+<div id="mapWrap" class="corners">
+  <div id="map"></div>
+  
+  <div id="hint">
+    <button class="hBtn geo" id="geoBtn">📍 MY LOCATION</button>
+    <button class="hBtn" id="reportBtnHeader">📝 REPORT</button>
+  </div>
+  
+  <div class="layers">
+    <button class="layerBtn active" data-layer="heatmap" id="heatLayerBtn">
+      <span class="sq"></span> HEATMAP
+    </button>
+    <button class="layerBtn" data-layer="clusters" id="clusterLayerBtn">
+      <span class="sq"></span> CLUSTERS
+    </button>
+  </div>
+  
+  <div id="legend">
+    <h4 id="legendTitle">TRUCK ACTIVITY</h4>
+    <div id="truckLegend">
+      <div class="grad"></div>
+      <div class="gradLbls">
+        <span>LOW</span>
+        <span>HIGH</span>
+      </div>
+      <p>Heat intensity shows report density in your area</p>
+    </div>
+    <div id="outageLegend">
+      <div class="outageKey"><span class="dot on"></span> Power ON</div>
+      <div class="outageKey"><span class="dot off"></span> Power OFF</div>
+      <div class="outageKey"><span class="dot unknown"></span> Unknown Status</div>
+      <p>Red spots indicate outage reports. Green shows restored power.</p>
+    </div>
+  </div>
+  
+  <div id="statusBar">
+    <span>MODE: <b id="currentMode">TRUCKS</b></span>
+    <span class="mono" id="lastUpdate">--:--:--</span>
+  </div>
+</div>
+
+<div id="panel">
+  <div id="grab"></div>
+  <div class="pHead">
+    <div class="statRow">
+      <div class="mini">
+        <b id="statTotal">0</b>
+        <span>TOTAL</span>
+      </div>
+      <div class="mini">
+        <b id="statRecent">0</b>
+        <span>1HR</span>
+      </div>
+      <div class="mini">
+        <b id="statActive">0</b>
+        <span>ACTIVE</span>
+      </div>
+    </div>
+    <button id="reportBtn">
+      <span>📝</span> SUBMIT REPORT
+    </button>
+  </div>
+  <div class="feedTitle">
+    <div class="ftL">
+      <span>📋</span> RECENT REPORTS
+    </div>
+    <span class="mono" id="feedCount">0</span>
+  </div>
+  <div class="panelScroll" id="feedList">
+    <div class="empty">
+      <div class="eGlyph">📭</div>
+      <b>NO REPORTS YET</b>
+      <p>Be the first to submit a report<br/>to help your community stay informed</p>
+    </div>
+  </div>
+  <div class="footNote">
+    Reports expire after 2 hours to keep data fresh.<br/>
+    Vote on reports to confirm accuracy.
+  </div>
+</div>
+
+<div id="modal" class="hidden">
+  <div class="modalCard">
+    <button id="modalClose">✕</button>
+    <h3><span class="tick"></span> <span id="modalTitle">NEW REPORT</span></h3>
+    
+    <div class="lbl">LOCATION</div>
+    <div id="locBox">Tap on map or use GPS</div>
+    
+    <div class="lbl" id="statusLabel">STATUS</div>
+    <div class="statusGrid" id="statusGrid">
+      <!-- Dynamically populated -->
+    </div>
+    
+    <div class="lbl">NOTES (OPTIONAL)</div>
+    <input class="mIn" id="noteInput" placeholder="Add details about what you're reporting..." maxlength="200"/>
+    
+    <div class="expireHint" id="expireHint">
+      Report will expire in ~2 hours
+    </div>
+    
+    <button id="submitBtn" disabled>SUBMIT REPORT</button>
+    <div id="cdNote"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+// Firebase Configuration
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBcE_0JrT8CqHvQZ8VqKqNqPqMqGqEqDqA",
+  authDomain: "nipsco-tracker.firebaseapp.com",
+  projectId: "nipsco-tracker",
+  storageBucket: "nipsco-tracker.firebasestorage.app",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+}
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// App State
+const state = {
+  mode: 'trucks', // 'trucks' or 'outages'
+  theme: 'dark',
+  reports: [],
+  selectedLocation: null,
+  selectedStatus: null,
+  map: null,
+  heatLayer: null,
+  clusterLayer: null,
+  markers: [],
+  currentUser: null,
+  layerMode: 'heatmap'
+};
+
+// Status configurations for each mode
+const MODE_CONFIG = {
+  trucks: {
+    title: 'NIPSCO TRUCK REPORT',
+    statuses: [
+      { id: 'spotted', label: 'TRUCK SPOTTED', color: '#ffb000', icon: '🚛' },
+      { id: 'working', label: 'CREW WORKING', color: '#42a85d', icon: '👷' },
+      { id: 'equipment', label: 'EQUIPMENT SEEN', color: '#6aa7e0', icon: '⚙️' },
+      { id: 'other', label: 'OTHER ACTIVITY', color: '#e5484d', icon: '📍' }
+    ],
+    collection: 'reports',
+    heatmapField: 'intensity',
+    legendTitle: 'TRUCK ACTIVITY'
+  },
+  outages: {
+    title: 'POWER OUTAGE REPORT',
+    statuses: [
+      { id: 'on', label: 'POWER ON', color: '#42a85d', icon: '✅' },
+      { id: 'off', label: 'POWER OFF', color: '#e5484d', icon: '❌' },
+      { id: 'unknown', label: 'UNKNOWN', color: '#888888', icon: '❓' }
+    ],
+    collection: 'outage_reports',
+    heatmapField: 'severity',
+    legendTitle: 'OUTAGE STATUS'
+  }
+};
+
+// DOM Elements
+const els = {
+  boot: document.getElementById('boot'),
+  map: document.getElementById('map'),
+  panel: document.getElementById('panel'),
+  modal: document.getElementById('modal'),
+  modalTitle: document.getElementById('modalTitle'),
+  locBox: document.getElementById('locBox'),
+  statusGrid: document.getElementById('statusGrid'),
+  noteInput: document.getElementById('noteInput'),
+  submitBtn: document.getElementById('submitBtn'),
+  modalClose: document.getElementById('modalClose'),
+  reportBtn: document.getElementById('reportBtn'),
+  reportBtnHeader: document.getElementById('reportBtnHeader'),
+  geoBtn: document.getElementById('geoBtn'),
+  themeBtn: document.getElementById('themeBtn'),
+  feedList: document.getElementById('feedList'),
+  totalCount: document.getElementById('totalCount'),
+  statTotal: document.getElementById('statTotal'),
+  statRecent: document.getElementById('statRecent'),
+  statActive: document.getElementById('statActive'),
+  feedCount: document.getElementById('feedCount'),
+  currentMode: document.getElementById('currentMode'),
+  lastUpdate: document.getElementById('lastUpdate'),
+  toasts: document.getElementById('toasts'),
+  heatLayerBtn: document.getElementById('heatLayerBtn'),
+  clusterLayerBtn: document.getElementById('clusterLayerBtn'),
+  legendTitle: document.getElementById('legendTitle'),
+  truckLegend: document.getElementById('truckLegend'),
+  outageLegend: document.getElementById('outageLegend'),
+  modeBtns: document.querySelectorAll('.modeBtn')
+};
+
+// Utility Functions
+function showToast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  els.toasts.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function formatTime(ts) {
+  if (!ts) return '--:--';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatFullTime(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString();
+}
+
+function getTimeAgo(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const sec = Math.floor((new Date() - d) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+
+// Initialize Map
+function initMap() {
+  state.map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false
+  }).setView([41.5, -87.0], 11);
+  
+  L.control.attribution({ position: 'bottomright' }).addTo(state.map);
+  
+  // Dark/light tile layers
+  const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  });
+  
+  const lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  });
+  
+  (state.theme === 'dark' ? darkTiles : lightTiles).addTo(state.map);
+  
+  // Heat layer
+  state.heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17 });
+  
+  // Cluster layer
+  state.clusterLayer = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 50
+  });
+  
+  if (state.layerMode === 'heatmap') {
+    state.heatLayer.addTo(state.map);
+  } else {
+    state.clusterLayer.addTo(state.map);
+  }
+  
+  // Map click for location selection
+  state.map.on('click', (e) => {
+    if (els.modal.classList.contains('hidden') === false) {
+      state.selectedLocation = e.latlng;
+      els.locBox.textContent = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+      els.locBox.classList.add('has');
+      checkSubmitReady();
+    }
+  });
+  
+  window.addEventListener('resize', () => state.map.invalidateSize());
+}
+
+// Mode Switching
+function switchMode(mode) {
+  state.mode = mode;
+  const config = MODE_CONFIG[mode];
+  
+  // Update UI
+  els.modeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  
+  els.currentMode.textContent = mode.toUpperCase();
+  els.modalTitle.textContent = config.title;
+  els.legendTitle.textContent = config.legendTitle;
+  
+  // Toggle legends
+  els.truckLegend.style.display = mode === 'trucks' ? 'block' : 'none';
+  els.outageLegend.style.display = mode === 'outages' ? 'block' : 'none';
+  
+  // Clear and reload data
+  clearLayers();
+  loadReports();
+  
+  showToast(`Switched to ${mode.toUpperCase()} mode`, 'ok');
+}
+
+// Layer Toggle
+function toggleLayer(layerType) {
+  state.layerMode = layerType;
+  
+  els.heatLayerBtn.classList.toggle('active', layerType === 'heatmap');
+  els.clusterLayerBtn.classList.toggle('active', layerType === 'clusters');
+  
+  clearLayers();
+  renderLayers();
+}
+
+function clearLayers() {
+  if (state.heatLayer) state.map.removeLayer(state.heatLayer);
+  if (state.clusterLayer) state.map.removeLayer(state.clusterLayer);
+  state.markers.forEach(m => state.map.removeLayer(m));
+  state.markers = [];
+  
+  // Re-add active layer
+  if (state.layerMode === 'heatmap') {
+    state.heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17 });
+    state.heatLayer.addTo(state.map);
+  } else {
+    state.clusterLayer = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 50 });
+    state.clusterLayer.addTo(state.map);
+  }
+}
+
+// Load Reports from Firestore
+async function loadReports() {
+  try {
+    const config = MODE_CONFIG[state.mode];
+    const snapshot = await db.collection(config.collection)
+      .orderBy('timestamp', 'desc')
+      .limit(500)
+      .get();
+    
+    state.reports = [];
+    snapshot.forEach(doc => {
+      state.reports.push({ id: doc.id, ...doc.data() });
+    });
+    
+    updateStats();
+    renderFeed();
+    renderLayers();
+    updateTime();
+  } catch (err) {
+    console.error('Error loading reports:', err);
+    showToast('Failed to load reports', 'err');
+  }
+}
+
+// Update Statistics
+function updateStats() {
+  const now = new Date();
+  const oneHourAgo = new Date(now - 3600000);
+  const twoHoursAgo = new Date(now - 7200000);
+  
+  const recent = state.reports.filter(r => {
+    const ts = r.timestamp?.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+    return ts > oneHourAgo;
+  }).length;
+  
+  const active = state.reports.filter(r => {
+    const ts = r.timestamp?.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+    return ts > twoHoursAgo;
+  }).length;
+  
+  els.totalCount.textContent = state.reports.length;
+  els.statTotal.textContent = state.reports.length;
+  els.statRecent.textContent = recent;
+  els.statActive.textContent = active;
+  els.feedCount.textContent = Math.min(state.reports.length, 50);
+}
+
+// Render Feed
+function renderFeed() {
+  if (state.reports.length === 0) {
+    els.feedList.innerHTML = `
+      <div class="empty">
+        <div class="eGlyph">📭</div>
+        <b>NO REPORTS YET</b>
+        <p>Be the first to submit a report<br/>to help your community stay informed</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const config = MODE_CONFIG[state.mode];
+  const items = state.reports.slice(0, 50).map(r => {
+    const status = config.statuses.find(s => s.id === r.status) || config.statuses[0];
+    const timeAgo = getTimeAgo(r.timestamp);
+    const votes = r.votes || 0;
+    
+    return `
+      <div class="feedItem" data-id="${r.id}">
+        <div class="fTop">
+          <b>${status.icon} ${status.label}</b>
+          <time>${timeAgo}</time>
+        </div>
+        <div class="fLoc">${r.address || 'Location hidden'}</div>
+        ${r.note ? `<div class="fNote">${r.note}</div>` : ''}
+        <div class="fMeta">
+          <button class="vBtn up" onclick="voteReport('${r.id}', 1)">
+            👍 <span>${votes}</span>
+          </button>
+          <button class="vBtn share" onclick="shareReport('${r.id}')">
+            🔗 SHARE
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  els.feedList.innerHTML = items;
+}
+
+// Render Layers (Heatmap or Clusters)
+function renderLayers() {
+  const config = MODE_CONFIG[state.mode];
+  
+  if (state.reports.length === 0) return;
+  
+  if (state.layerMode === 'heatmap') {
+    const heatPoints = state.reports.map(r => {
+      const lat = r.location?.latitude || 0;
+      const lng = r.location?.longitude || 0;
+      // For outages, 'off' status gets higher intensity
+      let intensity = 1;
+      if (state.mode === 'outages') {
+        intensity = r.status === 'off' ? 1 : (r.status === 'unknown' ? 0.5 : 0.3);
+      }
+      return [lat, lng, intensity];
+    });
+    
+    state.heatLayer.setLatLngs(heatPoints);
+  } else {
+    const markers = state.reports.map(r => {
+      const config = MODE_CONFIG[state.mode];
+      const status = config.statuses.find(s => s.id === r.status) || config.statuses[0];
+      
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="
+          width: 24px;
+          height: 24px;
+          background: ${status.color};
+          border: 2px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        ">${status.icon}</div>`,
+        iconSize: [24, 24]
+      });
+      
+      const marker = L.marker([r.location?.latitude || 0, r.location?.longitude || 0], { icon });
+      marker.bindPopup(`
+        <div style="min-width: 200px;">
+          <b style="font-size: 14px;">${status.icon} ${status.label}</b><br/>
+          <span style="color: #666; font-size: 12px;">${r.address || 'Unknown location'}</span><br/>
+          <span style="color: #888; font-size: 11px;">${formatTime(r.timestamp)}</span><br/>
+          ${r.note ? `<p style="margin-top: 8px; font-size: 12px;">${r.note}</p>` : ''}
+        </div>
+      `);
+      
+      state.markers.push(marker);
+      return marker;
+    });
+    
+    state.clusterLayer.addLayers(markers);
+  }
+}
+
+// Open Report Modal
+function openReportModal() {
+  const config = MODE_CONFIG[state.mode];
+  
+  state.selectedLocation = null;
+  state.selectedStatus = null;
+  els.locBox.textContent = 'Tap on map or use GPS';
+  els.locBox.classList.remove('has');
+  els.noteInput.value = '';
+  els.submitBtn.disabled = true;
+  
+  // Generate status buttons
+  els.statusGrid.innerHTML = config.statuses.map(s => `
+    <button class="stChip" data-status="${s.id}" onclick="selectStatus('${s.id}')">
+      <span class="d" style="background: ${s.color}"></span>
+      ${s.label}
+      <small>${s.icon}</small>
+    </button>
+  `).join('');
+  
+  els.modal.classList.remove('hidden');
+}
+
+// Close Modal
+function closeModal() {
+  els.modal.classList.add('hidden');
+}
+
+// Select Status
+window.selectStatus = function(statusId) {
+  state.selectedStatus = statusId;
+  
+  document.querySelectorAll('.stChip').forEach(chip => {
+    chip.classList.toggle('sel', chip.dataset.status === statusId);
+  });
+  
+  checkSubmitReady();
+};
+
+// Check Submit Ready
+function checkSubmitReady() {
+  els.submitBtn.disabled = !(state.selectedLocation && state.selectedStatus);
+}
+
+// Submit Report
+async function submitReport() {
+  if (!state.selectedLocation || !state.selectedStatus) return;
+  
+  const config = MODE_CONFIG[state.mode];
+  
+  const reportData = {
+    status: state.selectedStatus,
+    location: {
+      latitude: state.selectedLocation.lat,
+      longitude: state.selectedLocation.lng
+    },
+    address: els.locBox.textContent,
+    note: els.noteInput.value.trim(),
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    votes: 0,
+    mode: state.mode,
+    expiresAt: new Date(Date.now() + 7200000) // 2 hours
+  };
+  
+  try {
+    await db.collection(config.collection).add(reportData);
+    closeModal();
+    showToast('Report submitted successfully!', 'ok');
+    loadReports();
+  } catch (err) {
+    console.error('Error submitting report:', err);
+    showToast('Failed to submit report', 'err');
+  }
+}
+
+// Vote on Report
+window.voteReport = async function(reportId, direction) {
+  try {
+    const config = MODE_CONFIG[state.mode];
+    const reportRef = db.collection(config.collection).doc(reportId);
+    
+    await reportRef.update({
+      votes: firebase.firestore.FieldValue.increment(direction)
+    });
+    
+    loadReports();
+  } catch (err) {
+    console.error('Error voting:', err);
+  }
+};
+
+// Share Report
+window.shareReport = async function(reportId) {
+  const url = `${window.location.origin}${window.location.pathname}?report=${reportId}&mode=${state.mode}`;
+  
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied to clipboard!', 'ok');
+  } catch (err) {
+    prompt('Copy this link:', url);
+  }
+};
+
+// Get User Location
+function getUserLocation() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation not supported', 'err');
+    return;
+  }
+  
+  showToast('Getting location...');
+  
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      state.map.setView([latitude, longitude], 15);
+      
+      if (!els.modal.classList.contains('hidden')) {
+        state.selectedLocation = { lat: latitude, lng: longitude };
+        els.locBox.textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        els.locBox.classList.add('has');
+        checkSubmitReady();
+      }
+      
+      showToast('Location found!', 'ok');
+    },
+    (err) => {
+      showToast('Unable to get location', 'err');
+      console.error(err);
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// Update Time Display
+function updateTime() {
+  const now = new Date();
+  els.lastUpdate.textContent = now.toLocaleTimeString();
+}
+
+// Theme Toggle
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  
+  // Reload map tiles
+  state.map.eachLayer(layer => {
+    if (layer instanceof L.TileLayer) {
+      state.map.removeLayer(layer);
+    }
+  });
+  
+  const tiles = state.theme === 'dark' 
+    ? L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' })
+    : L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' });
+  
+  tiles.addTo(state.map);
+}
+
+// Event Listeners
+els.reportBtn.addEventListener('click', openReportModal);
+els.reportBtnHeader.addEventListener('click', openReportModal);
+els.modalClose.addEventListener('click', closeModal);
+els.submitBtn.addEventListener('click', submitReport);
+els.geoBtn.addEventListener('click', getUserLocation);
+els.themeBtn.addEventListener('click', toggleTheme);
+
+els.heatLayerBtn.addEventListener('click', () => toggleLayer('heatmap'));
+els.clusterLayerBtn.addEventListener('click', () => toggleLayer('clusters'));
+
+els.modeBtns.forEach(btn => {
+  btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+});
+
+// Panel drag for mobile
+let panelStartY = 0;
+let panelOpen = false;
+
+document.getElementById('grab')?.addEventListener('touchstart', (e) => {
+  panelStartY = e.touches[0].clientY;
+});
+
+document.getElementById('grab')?.addEventListener('touchmove', (e) => {
+  const deltaY = panelStartY - e.touches[0].clientY;
+  if (deltaY > 50) {
+    els.panel.classList.add('open');
+    panelOpen = true;
+  } else if (deltaY < -50) {
+    els.panel.classList.remove('open');
+    panelOpen = false;
+  }
+});
+
+// Handle URL parameters (for shared links)
+const urlParams = new URLSearchParams(window.location.search);
+const sharedReportId = urlParams.get('report');
+const sharedMode = urlParams.get('mode');
+
+if (sharedMode && MODE_CONFIG[sharedMode]) {
+  switchMode(sharedMode);
+}
+
+// Initialize App
+async function init() {
+  initMap();
+  await loadReports();
+  
+  // Hide boot screen
+  setTimeout(() => {
+    els.boot.classList.add('done');
+  }, 800);
+  
+  // Auto-refresh every 30 seconds
+  setInterval(loadReports, 30000);
+  setInterval(updateTime, 1000);
+}
+
+init();
+</script>
+</body>
+</html>

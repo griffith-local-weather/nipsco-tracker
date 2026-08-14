@@ -6,7 +6,7 @@ service cloud.firestore {
       return n.lat == o.lat && n.lng == o.lng && n.status == o.status
         && n.note == o.note && n.deviceId == o.deviceId;
     }
-    function isValidCreate(d) {
+    function isValidTruckCreate(d) {
       return d.keys().size() == 9
         && d.lat is number && d.lat >= 39.9 && d.lat <= 42.1
         && d.lng is number && d.lng >= -88.4 && d.lng <= -84.4
@@ -19,7 +19,7 @@ service cloud.firestore {
         && d.ups == 0 && d.downs == 0
         && d.voters is list && d.voters.size() == 0;
     }
-    function isValidUpdate(n, o) {
+    function isValidTruckUpdate(n, o) {
       return n.keys().size() == 9
         && immutableOK(n, o)
         && math.abs(n.ups - o.ups) <= 1
@@ -29,22 +29,58 @@ service cloud.firestore {
         && n.ts <= request.time.toMillis() + 60000;
     }
     
-    // Reports collection rules
+    // Outage report validation functions
+    function isValidOutageCreate(d) {
+      return d.keys().size() == 9
+        && d.lat is number && d.lat >= 30 && d.lat <= 50
+        && d.lng is number && d.lng >= -130 && d.lng <= -60
+        && d.status in ['on','off','unknown']
+        && d.note is string && d.note.size() <= 120
+        && d.deviceId is string && d.deviceId.size() <= 32
+        && d.ts is int
+        && d.ts <= request.time.toMillis() + 60000
+        && d.ts >= request.time.toMillis() - 120000
+        && d.ups == 0 && d.downs == 0
+        && d.voters is list && d.voters.size() == 0;
+    }
+    function isValidOutageUpdate(n, o) {
+      return n.keys().size() == 9
+        && immutableOK(n, o)
+        && math.abs(n.ups - o.ups) <= 1
+        && math.abs(n.downs - o.downs) <= 1
+        && n.voters.size() <= o.voters.size() + 1
+        && n.ts >= o.ts
+        && n.ts <= request.time.toMillis() + 60000;
+    }
+    
+    // Reports collection rules (NIPSCO Truck Tracker)
     match /reports/{docId} {
       allow read: if true;
-      allow create: if isValidCreate(request.resource.data);
-      allow update: if isValidUpdate(request.resource.data, resource.data);
+      allow create: if isValidTruckCreate(request.resource.data);
+      allow update: if isValidTruckUpdate(request.resource.data, resource.data);
       allow delete: if request.auth != null 
                     && request.auth.token.email == 'primegamer2008@outlook.com';
     }
     
-    // Announcements collection rules (Messaging Service)
-    match /announcements/{docId} {
-      // Anyone can read announcements
+    // Outage reports collection rules (Power Outage Tracker)
+    match /outage_reports/{docId} {
       allow read: if true;
-      
-      // Only YOU can write/delete announcements
-      // Must be authenticated AND email must match exactly
+      allow create: if isValidOutageCreate(request.resource.data);
+      allow update: if isValidOutageUpdate(request.resource.data, resource.data);
+      allow delete: if request.auth != null 
+                    && request.auth.token.email == 'primegamer2008@outlook.com';
+    }
+    
+    // Announcements collection rules (NIPSCO Messaging Service)
+    match /announcements/{docId} {
+      allow read: if true;
+      allow write, delete: if request.auth != null 
+                           && request.auth.token.email == 'primegamer2008@outlook.com';
+    }
+    
+    // Outage announcements collection rules (Power Outage Messaging)
+    match /outage_announcements/{docId} {
+      allow read: if true;
       allow write, delete: if request.auth != null 
                            && request.auth.token.email == 'primegamer2008@outlook.com';
     }
