@@ -34,7 +34,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isValidCreate(request.resource.data);
       allow update: if isValidUpdate(request.resource.data, resource.data);
-      allow delete: if false;
+      allow delete: if request.auth != null 
+                    && request.auth.token.email == 'primegamer2008@outlook.com';
     }
     
     // Announcements collection rules (Messaging Service)
