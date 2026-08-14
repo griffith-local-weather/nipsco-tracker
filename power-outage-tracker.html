@@ -331,7 +331,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
       <div class="statRow">
         <div class="mini"><b id="statTotal">0</b><span>REPORTS</span></div>
         <div class="mini"><b id="statOff">0</b><span>POWER OFF</span></div>
-        <div class="mini"><b id="statNext">—</b><span>EXPIRES</span></div>
+        <div class="mini"><b id="statNext">—</b><span>PERSISTENT</span></div>
       </div>
       <button id="reportBtn"><span>REPORT STATUS</span><span id="cdChip" class="hidden"></span></button>
     </div>
@@ -424,7 +424,7 @@ auth.onAuthStateChanged((user) => {
 /* ================= config & helpers ================= */
 const COOLDOWN_SEC = 60, HOURLY_CAP = 8;
 const K_REP='pot_reports', K_LAST='pot_last', K_TIMES='pot_times', K_DEV='pot_devid', K_THEME='pot_theme';
-const TTL_MIN = { on:120, off:60, unknown:90 }; // ON lasts 2hrs, OFF 1hr, UNKNOWN 1.5hrs
+// Power outage reports persist indefinitely (no expiration)
 const MAX_SYNC_MS = 2*36e5;
 const $ = s => document.querySelector(s);
 const LS = {
@@ -435,7 +435,7 @@ const LS = {
 };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function ago(ts){ const s=(Date.now()-ts)/1e3; if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
-const ttlOf = r => (TTL_MIN[r.status]||60)*60000;
+// Reports no longer expire - ttlOf removed
 function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
 
 let deviceId = LS.raw(K_DEV);
@@ -522,7 +522,7 @@ async function fetchReports(){
     snap.forEach(d=>{ 
       const r=d.data(); 
       r.id=d.id;
-      if(r.ts > now-MAX_SYNC_MS && (now-r.ts < ttlOf(r))){
+      if(r.ts > now-MAX_SYNC_MS){
         r.ups=r.ups||0; 
         r.downs=r.downs||0; 
         r.voters=r.voters||[]; 
@@ -628,7 +628,7 @@ function heatPoints(){
   const now=Date.now();
   // Weight OFF reports higher in heatmap
   return reports.filter(r=>!isFlagged(r)).map(r=>{
-    const rem=Math.max(0, 1-(now-r.ts)/ttlOf(r));
+    const rem=1; // No expiration - full weight
     let w=0.2+0.8*rem;
     if(r.status==='off') w*=1.5; // Outages show hotter
     if((r.ups||0)>=2) w=Math.min(1.25, w+0.3);
@@ -799,17 +799,17 @@ addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; schedu
 
 function buildStatusGrid(){
   statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
-    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small>~'+esc(TTL_MIN[s.k])+'m</small></button>').join('');
+    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small></button>').join('');
   statusGrid.querySelectorAll('.stChip').forEach(b=>b.addEventListener('click',()=>{
     selStatus=b.dataset.k; buzz(8);
     statusGrid.querySelectorAll('.stChip').forEach(x=>x.classList.toggle('sel',x===b));
-    expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.'; }));
+    expireHint.textContent='REPORTS PERSIST INDEFINITELY.'; }));
 }
 function openModal(){
   locBox.innerHTML='≈ '+pendingLoc.lat.toFixed(3)+', '+pendingLoc.lng.toFixed(3)
     +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(FUZZED ±200M)</span>';
   locBox.classList.add('has'); buildStatusGrid();
-  expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.';
+  expireHint.textContent='REPORTS PERSIST INDEFINITELY.';
   modal.classList.remove('hidden'); tickCooldown();
 }
 function closeModal(){ modal.classList.add('hidden'); pendingLoc=null; noteIn.value=''; }
@@ -858,7 +858,7 @@ submitBtn.addEventListener('click',async()=>{
     catch(e){ submitBtn.disabled=false; submitBtn.textContent='SUBMIT REPORT';
       toast('COULD NOT REACH DATABASE','warn'); return; }
     closeModal(); pulse(rep);
-    toast('REPORT SUBMITTED — EXPIRES IN ~'+TTL_MIN[rep.status]+' MIN','ok');
+    toast('REPORT SUBMITTED — ADDED TO MAP','ok');
   }else{
     rep.id=Date.now().toString(36); reports.push(rep); LS.set(K_REP,reports);
     afterChange(); closeModal(); pulse(rep); toast('REPORT LOGGED (LOCAL MODE)','ok');
@@ -895,12 +895,12 @@ function renderFeed(){
     }
     
     const st=STATUSES.find(s=>s.k===r.status)||STATUSES[2];
-    const remMs=ttlOf(r)-(now-r.ts), mins=Math.max(0,Math.ceil(remMs/60000));
+    // No expiration
     const flg=isFlagged(r), boost=(r.ups||0)>=2&&!flg;
     return '<div class="feedItem'+(flg?' flagged':'')+(boost?' boosted':'')+'" data-id="'+esc(r.id)+'" style="border-left-color:'+st.c+'">'
       +'<div class="fTop"><b>'+st.label+'</b><time>'+ago(r.ts)+'</time></div>'
       +'<div class="fLoc">'+esc(nearestCity(r.lat,r.lng))+'</div>'
-      +'<div class="fMeta"><span class="exp'+(mins<10?' warn':'')+'">⏳ '+mins+'M</span>'
+      +'<div class="fMeta"><span class="exp'+(mins<10?' warn':'')+'"><span>PERSISTENT</span>'
       +(flg?'<span class="flagTag">HIDDEN</span>':
         '<button class="vBtn up" data-action="up" title="Confirm">▲ '+(r.ups||0)+'</button>'
         +'<button class="vBtn down" data-action="down" title="Wrong info">▼ '+(r.downs||0)+'</button>'
@@ -914,12 +914,11 @@ function renderStats(){
   $('#statLive').textContent=active.length; $('#statTotal').textContent=active.length;
   const offCount=active.filter(r=>r.status==='off').length;
   $('#statOff').textContent=offCount; $('#statHotTop').textContent=offCount;
-  if(active.length){ const next=Math.min(...active.map(r=>ttlOf(r)-(Date.now()-r.ts)));
-    $('#statNext').textContent=Math.max(0,Math.ceil(next/60000))+'m'; }
-  else $('#statNext').textContent='—';
+  // Reports persist indefinitely
+  $('#statNext').textContent='—';
 }
 setInterval(()=>{ const before=reports.length;
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
+  // Reports no longer expire
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
   if(reports.length !== before || syncMode) {
     refreshLayers(); renderFeed(); renderStats();
@@ -943,7 +942,8 @@ applyTheme();
 if(syncMode){ startSync(); startAnnouncementSync(); }
 else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
   reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }
+  reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
+  afterChange(); }
 tickCooldown();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
