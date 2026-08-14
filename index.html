@@ -236,9 +236,9 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .toast.ok{border-color:var(--ok);color:var(--ok)}
 
 @media (max-width:768px){
-  #panel{left:0;right:0;top:auto;bottom:var(--safeB);width:100%;max-height:65vh;display:none;border-radius:16px 16px 0 0}
+  #panel{left:0;right:0;top:auto;bottom:var(--safeB);width:100%;max-height:60vh;display:none}
   #panel.open{display:flex}
-  #grab{display:block;margin:10px auto}
+  #grab{display:block}
   .brand h1{font-size:14px}
   .countBox{padding:4px 10px;min-width:70px}
   .countBox b{font-size:16px}
@@ -246,7 +246,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   #themeBtn{width:48px}
   #legend{right:8px;bottom:80px;width:180px;padding:10px}
   #statusBar{bottom:0;font-size:9px}
-  .modeBtn{padding:4px 10px;font-size:9px}
 }
 </style>
 </head>
@@ -951,34 +950,20 @@ els.modeBtns.forEach(btn => {
 let panelStartY = 0;
 let panelOpen = false;
 
-const grabHandle = document.getElementById('grab');
-if (grabHandle) {
-  grabHandle.addEventListener('touchstart', (e) => {
-    panelStartY = e.touches[0].clientY;
-  }, { passive: true });
+document.getElementById('grab')?.addEventListener('touchstart', (e) => {
+  panelStartY = e.touches[0].clientY;
+});
 
-  grabHandle.addEventListener('touchmove', (e) => {
-    const deltaY = panelStartY - e.touches[0].clientY;
-    if (deltaY > 50) {
-      els.panel.classList.add('open');
-      panelOpen = true;
-    } else if (deltaY < -50) {
-      els.panel.classList.remove('open');
-      panelOpen = false;
-    }
-  }, { passive: true });
-  
-  // Also support click/tap to toggle
-  grabHandle.addEventListener('click', () => {
-    els.panel.classList.toggle('open');
-    panelOpen = !panelOpen;
-  });
-}
-
-// Prevent map scrolling when interacting with panel on mobile
-els.panel.addEventListener('touchmove', (e) => {
-  e.stopPropagation();
-}, { passive: true });
+document.getElementById('grab')?.addEventListener('touchmove', (e) => {
+  const deltaY = panelStartY - e.touches[0].clientY;
+  if (deltaY > 50) {
+    els.panel.classList.add('open');
+    panelOpen = true;
+  } else if (deltaY < -50) {
+    els.panel.classList.remove('open');
+    panelOpen = false;
+  }
+});
 
 // Handle URL parameters (for shared links)
 const urlParams = new URLSearchParams(window.location.search);
