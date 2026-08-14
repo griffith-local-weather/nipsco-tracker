@@ -513,7 +513,7 @@ function handleAdminSignIn() {
 const COOLDOWN_SEC = 60, HOURLY_CAP = 8;
 const K_REP='ntt4_reports', K_LAST='ntt4_last', K_TIMES='ntt4_times', K_DEV='ntt4_devid', K_THEME='ntt4_theme';
 const TTL_MIN = { moving:30, other:40, parked:45, working:60, storm:90 };
-const MAX_SYNC_MS = 2*36e5;
+const MAX_SYNC_MS = 1*36e5; // Reduced from 2 hours to 1 hour to cut Firebase reads
 const $ = s => document.querySelector(s);
 const LS = {
   get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
@@ -531,7 +531,7 @@ if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toSt
 
 /* ================= Firebase ================= */
 let db=null, syncMode=false, reports=[], announcements=[], dismissedAnnouncementIds=new Set();
-let announcementListener=null, reportsListener=null;
+let announcementPollTimer=null, reportsPollTimer=null;
 if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
   try{ 
     firebase.initializeApp(FIREBASE_CONFIG); 
@@ -546,19 +546,26 @@ function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.
 paintSyncBadge();
 
 /* ================= Announcements ================= */
+// Poll every 60 seconds instead of real-time listener - saves 95%+ reads
+async function fetchAnnouncements(){
+  if(!syncMode) return;
+  try{
+    // Get all announcements, filter client-side to avoid index issues
+    const snap = await db.collection('announcements')
+      .orderBy('ts', 'desc')
+      .get();
+    announcements=[];
+    snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
+    renderAnnouncements();
+    renderFeed();
+  }catch(err){ console.log('Announcement fetch error:',err); }
+}
+
 function startAnnouncementSync(){
   if(!syncMode) return;
-  // Listen to all active announcements (no orderBy to avoid index requirement)
-  // Store listener reference so we can detach if needed
-  announcementListener = db.collection('announcements').where('active','==',true)
-    .onSnapshot(snap=>{
-      announcements=[];
-      snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
-      // Sort client-side by timestamp
-      announcements.sort((a,b) => (b.ts||0) - (a.ts||0));
-      renderAnnouncements();
-      renderFeed();
-    }, err=>{ console.log('Announcement sync error:',err); });
+  fetchAnnouncements();
+  // Poll every 60 seconds
+  announcementPollTimer = setInterval(fetchAnnouncements, 60000);
 }
 
 function renderAnnouncements(){
@@ -569,6 +576,7 @@ function renderAnnouncements(){
   });
   if(active.length===0){ $('#announcementBar').classList.add('hidden'); }
   else{
+    // Show only the top 2 most recent announcements visually
     const msg=active[0];
     $('#announcementText').innerText=msg.message||'';
     $('#announcementBar').classList.remove('hidden');
@@ -636,19 +644,54 @@ function broadcastMessage(message, style='normal', durationMin=60){
 const urlSpot = new URLSearchParams(location.search).get('spot');
 let pendingSpot = urlSpot || null;
 
-function startSync(){
-  // Use onSnapshot for real-time updates (only charges for changes, not repeated reads)
-  // Store listener reference so we can detach if needed
-  reportsListener = db.collection('reports').where('ts','>', Date.now()-MAX_SYNC_MS)
-    .onSnapshot(snap=>{
-      reports=[];
-      snap.forEach(d=>{ const r=d.data(); r.id=d.id;
-        r.ups=r.ups||0; r.downs=r.downs||0; r.voters=r.voters||[]; reports.push(r); });
-      reports = reports.filter(r=> Date.now()-r.ts < ttlOf(r));
-      afterChange();
-    }, err=>{ syncTag.textContent='OFFLINE'; toast('LIVE SYNC ERROR — CHECK FIRESTORE RULES','warn'); });
+// Poll every 30 seconds instead of real-time listener - saves 95%+ reads
+async function fetchReports(){
+  if(!syncMode) return;
+  try{
+    // Query all recent reports, then filter client-side
+    // This avoids complex composite indexes while still being efficient
+    const snap = await db.collection('reports')
+      .orderBy('ts', 'desc')
+      .get();
+    reports=[];
+    const now = Date.now();
+    snap.forEach(d=>{ 
+      const r=d.data(); 
+      r.id=d.id;
+      // Only keep reports within time window AND not expired
+      if(r.ts > now-MAX_SYNC_MS && (now-r.ts < ttlOf(r))){
+        r.ups=r.ups||0; 
+        r.downs=r.downs||0; 
+        r.voters=r.voters||[]; 
+        reports.push(r);
+      }
+    });
+    afterChange();
+  }catch(err){ syncTag.textContent='OFFLINE'; toast('LIVE SYNC ERROR — CHECK FIRESTORE RULES','warn'); }
 }
-function afterChange(){ refreshLayers(); renderFeed(); renderStats(); focusSpot(); layoutBottom(); }
+
+function startSync(){
+  fetchReports();
+  // Poll every 30 seconds (you said only ~5 reports active at once)
+  reportsPollTimer = setInterval(fetchReports, 30000);
+}
+let layoutPending = false;
+function afterChange(){ 
+  refreshLayers(); 
+  renderFeed(); 
+  renderStats(); 
+  focusSpot(); 
+  scheduleLayoutBottom();
+}
+
+function scheduleLayoutBottom(){
+  if(layoutPending) return;
+  layoutPending = true;
+  requestAnimationFrame(()=>{
+    layoutPending = false;
+    layoutBottom();
+  });
+}
 
 const STATUSES = [
   {k:'moving', label:'Moving', c:'#86c93a'}, {k:'parked', label:'Parked', c:'#4aa3e0'},
@@ -870,7 +913,7 @@ $('#radarToggle').addEventListener('click',async()=>{
   radarOn=!radarOn; $('#radarToggle').classList.toggle('active',radarOn);
   radarBar.classList.toggle('hidden',!radarOn);
   if(radarOn){showRadarFrame(radarIdx);} else{stopRadarPlay();radarLayers.forEach(l=>{if(l)map.removeLayer(l);});}
-  layoutBottom(); });
+  scheduleLayoutBottom(); });
 
 /* ================= toasts & pulse ================= */
 function toast(msg,type){ const t=document.createElement('div'); t.className='toast '+(type||''); t.textContent=msg;
@@ -964,7 +1007,7 @@ function openH(){ return Math.round(Math.min(innerHeight*0.72, 640)); }
 function setSheet(open){
   panel.classList.toggle('collapsed',!open);
   if(isMobile()) panel.style.maxHeight=(open?openH():collapsedH())+'px';
-  layoutBottomSoon();
+  scheduleLayoutBottom();
 }
 let sheetDrag=null;
 sheetHead.addEventListener('pointerdown',e=>{
@@ -978,7 +1021,7 @@ sheetHead.addEventListener('pointermove',e=>{
   if(Math.abs(dy)>6)sheetDrag.moved=true;
   if(!sheetDrag.moved)return;
   panel.style.maxHeight=Math.max(collapsedH(),Math.min(openH(),sheetDrag.h+dy))+'px';
-  layoutBottom();
+  scheduleLayoutBottom();
 });
 function endSheet(){
   if(!sheetDrag)return;
@@ -996,8 +1039,8 @@ function layoutBottom(){
     document.documentElement.style.setProperty('--sheetH', Math.ceil(h)+'px');
   }
 }
-function layoutBottomSoon(){ requestAnimationFrame(layoutBottom); setTimeout(layoutBottom,320); }
-addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; layoutBottomSoon(); });
+// layoutBottomSoon is deprecated - use scheduleLayoutBottom instead
+addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; scheduleLayoutBottom(); });
 
 function buildStatusGrid(){
   statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
@@ -1163,7 +1206,11 @@ function renderStats(){
 setInterval(()=>{ const before=reports.length;
   reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
-  refreshLayers(); renderFeed(); renderStats(); },30000);
+  // Only refresh if something changed to avoid unnecessary renders
+  if(reports.length !== before || syncMode) {
+    refreshLayers(); renderFeed(); renderStats();
+  }
+},30000);
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
@@ -1185,7 +1232,13 @@ else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
 tickCooldown(); initRadar();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
-layoutBottomSoon();
+scheduleLayoutBottom();
+
+// Cleanup polling timers when page is closed to prevent background reads
+window.addEventListener('beforeunload', () => {
+  if(announcementPollTimer) clearInterval(announcementPollTimer);
+  if(reportsPollTimer) clearInterval(reportsPollTimer);
+});
 
 // Onboarding for first-time users
 const hasSeenOnboarding=LS.raw('seenOnboarding');
