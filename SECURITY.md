@@ -2,4 +2,4 @@
 
 ## Reporting a Vulnerability
 
-Go to facebook.com/GriffithLW and DM me!
+Go to www.facebook.com/GriffithLW and DM me!
