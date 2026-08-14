@@ -518,7 +518,7 @@ let deviceId = LS.raw(K_DEV);
 if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toString(36).slice(2,12); LS.rawSet(K_DEV, deviceId); }
 
 /* ================= Firebase ================= */
-let db=null, syncMode=false, reports=[], announcements=[];
+let db=null, syncMode=false, reports=[], announcements=[], dismissedAnnouncementIds=new Set();
 if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
   try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); syncMode=true; }catch(e){ syncMode=false; }
 }
@@ -545,7 +545,7 @@ function renderAnnouncements(){
   const now=Date.now();
   const active=announcements.filter(a=>{
     const expires=a.expires||0;
-    return !a.hidden && (expires===0 || now<expires);
+    return !a.hidden && !dismissedAnnouncementIds.has(a.id) && (expires===0 || now<expires);
   });
   if(active.length===0){ $('#announcementBar').classList.add('hidden'); }
   else{
@@ -909,10 +909,11 @@ modal.addEventListener('click',e=>{ if(e.target===modal)closeModal(); });
 
 /* Announcement bar close */
 $('#announcementClose').addEventListener('click',()=>{
-  $('#announcementBar').classList.add('hidden');
-  if(syncMode && announcements.length>0){
-    db.collection('announcements').doc(announcements[0].id).update({hidden:true});
+  const activeAnnouncement = announcements.length > 0 ? announcements[0] : null;
+  if(activeAnnouncement){
+    dismissedAnnouncementIds.add(activeAnnouncement.id);
   }
+  $('#announcementBar').classList.add('hidden');
 });
 
 /* Admin Panel */
