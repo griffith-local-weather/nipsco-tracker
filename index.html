@@ -258,7 +258,8 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   .pHead:active{cursor:grabbing}
   .statRow{margin-top:8px}
   #reportBtn{min-height:54px}
-  #radarBar{left:10px;right:10px;transform:none;bottom:12px;
+  /* Radar bar: move below map buttons on mobile to avoid overlap */
+  #radarBar{left:10px;right:10px;transform:none;bottom:calc(var(--sheetH,170px) + 60px);
     justify-content:center;padding:10px;max-width:none}
   #radarPlay{width:44px;height:44px;font-size:13px}
   #radarScrub{flex:1;width:auto;min-width:60px;height:32px}
@@ -271,6 +272,8 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   .stChip{min-height:54px;font-size:12.5px}
   #submitBtn{min-height:56px}
   #toasts{top:52px}
+  /* Zoom out mobile UI slightly to reduce crowding */
+  html{font-size:14px}
 }
 @media(max-width:400px){
   .countBox.hotbox{display:none}
@@ -710,7 +713,7 @@ function heatPoints(){
 function rebuildHeat(){
   if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
   if(showHeat){ heatLayer = L.heatLayer(heatPoints(),{
-      radius:36, blur:30, minOpacity:0.55, max:2.4,
+      radius:42, blur:28, minOpacity:0.75, max:3.2,
       gradient:{0.15:'#4c0d0d',0.35:'#b91c1c',0.55:'#ef4444',0.72:'#f97316',0.87:'#fbbf24',1:'#fef08a'}
     }).addTo(map); }
 }
@@ -723,7 +726,8 @@ function rebuildBubbles(){
   Object.values(cells).forEach(arr=>{
     const lat=arr.reduce((s,r)=>s+r.lat,0)/arr.length, lng=arr.reduce((s,r)=>s+r.lng,0)/arr.length;
     const hot=arr.some(r=>(r.ups||0)>=2);
-    const rCircle=L.circle([lat,lng],{ radius:180+Math.min(1400,Math.sqrt(arr.length)*280),
+    // Smaller radius multiplier to reduce bubble size
+    const rCircle=L.circle([lat,lng],{ radius:120+Math.min(800,Math.sqrt(arr.length)*180),
       color:hot?'#ffc72e':'#ffb000', weight:hot?1.8:1.2, opacity:0.55, dashArray:hot?null:'4 4',
       fillColor:'#ff8a3d', fillOpacity:0.22, interactive:true }).addTo(bubbleLayer);
     // Click to show first report in bubble
@@ -840,7 +844,7 @@ $('#feed').addEventListener('click',e=>{
     if(syncMode){
       db.collection('reports').doc(id).delete()
         .then(()=>toast('REPORT DELETED','ok'))
-        .catch(()=>toast('DELETE FAILED','warn'));
+        .catch((e)=>{ console.error('Delete error:', e); toast('DELETE FAILED: '+e.message,'warn'); });
     }else{
       const idx=reports.findIndex(r=>r.id===id);
       if(idx>=0){ reports.splice(idx,1); LS.set(K_REP,reports); afterChange(); toast('REPORT DELETED','ok'); }
@@ -1023,9 +1027,13 @@ function renderFeed(){
     return !a.hidden && (expires===0 || now<expires);
   });
   
-  // Combine announcements and reports, sort by timestamp DESCENDING (newest first)
+  // Combine announcements and reports, sort by timestamp DESCENDING (newest at top)
   const combined=[...activeAnnouncements.map(a=>({...a,_type:'announcement'})), ...reports];
-  const list=combined.sort((a,b)=> (a._type==='announcement'?0:1) || (b.ts-a.ts));
+  const list=combined.sort((a,b)=> {
+    if(a._type==='announcement' && b._type!=='announcement') return -1;
+    if(b._type==='announcement' && a._type!=='announcement') return 1;
+    return b.ts-a.ts; // descending: newest first
+  });
   
   $('#feedCount').textContent=list.length?list.length+' ACTIVE':'';
   if(!list.length){ $('#feed').innerHTML='<div class="empty"><div class="eGlyph">⌖</div><b>NO ACTIVE SIGHTINGS</b>'
