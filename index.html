@@ -1158,7 +1158,7 @@ setInterval(()=>{ const before=reports.length;
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
 let trafficOn = false;
-const trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20, attribution:'© Google' });
+const trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20, attribution:'© Google' });
 $('#trafficToggle').addEventListener('click',()=>{ 
   trafficOn = !trafficOn; 
   $('#trafficToggle').classList.toggle('active', trafficOn);
