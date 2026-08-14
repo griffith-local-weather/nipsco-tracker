@@ -699,12 +699,13 @@ $('#themeBtn').addEventListener('click',()=>{
   darkTheme=!darkTheme; LS.rawSet(K_THEME, darkTheme?'dark':'light'); applyTheme();
 });
 
-let showHeat=true, showBubbles=false, heatLayer=null, bubbleLayer=null;
+let showHeat=true, showBubbles=false, heatLayer=null, bubbleLayer=null, pointLayer=null;
 const isFlagged = r => (r.downs||0) >= 3;
 
 function heatPoints(){
   const now=Date.now();
-  return reports.filter(r=>!isFlagged(r)).map(r=>{
+  // Exclude 'other' and 'none' from heatmap
+  return reports.filter(r=>!isFlagged(r) && r.category && r.category.toLowerCase() !== 'other' && r.category.toLowerCase() !== 'none').map(r=>{
     const rem=Math.max(0, 1-(now-r.ts)/ttlOf(r));
     let w=0.2+0.8*rem;
     if((r.ups||0)>=2) w=Math.min(1.25, w+0.3);
@@ -720,10 +721,27 @@ function rebuildHeat(){
 }
 function rebuildBubbles(){
   if(bubbleLayer){ map.removeLayer(bubbleLayer); bubbleLayer=null; }
+  if(pointLayer){ map.removeLayer(pointLayer); pointLayer=null; }
+  
   bubbleLayer = L.layerGroup();
+  pointLayer = L.layerGroup();
+  
   const cells={};
+  // Separate reports: bubbles for real categories, points for 'other'/'none'
+  const bubbleReports = [];
+  const pointReports = [];
+  
   reports.filter(r=>!isFlagged(r)).forEach(r=>{
-    const k=Math.round(r.lat/0.02)+':'+Math.round(r.lng/0.02); (cells[k]=cells[k]||[]).push(r); });
+    const cat = (r.category||'').toLowerCase();
+    if(cat === 'other' || cat === 'none'){
+      pointReports.push(r);
+    } else {
+      const k=Math.round(r.lat/0.02)+':'+Math.round(r.lng/0.02); (cells[k]=cells[k]||[]).push(r);
+      bubbleReports.push(r);
+    }
+  });
+  
+  // Build Bubbles
   Object.values(cells).forEach(arr=>{
     const lat=arr.reduce((s,r)=>s+r.lat,0)/arr.length, lng=arr.reduce((s,r)=>s+r.lng,0)/arr.length;
     const hot=arr.some(r=>(r.ups||0)>=2);
@@ -741,7 +759,21 @@ function rebuildBubbles(){
       }
     });
   });
+  
+  // Build Exact Points for 'Other' / NIPSCO info
+  pointReports.forEach(r=>{
+    const pMarker=L.circleMarker([r.lat,r.lng],{ radius:6,
+      color:'#fff', weight:2, opacity:0.9,
+      fillColor:'#6c757d', fillOpacity:0.9, interactive:true }).addTo(pointLayer);
+    pMarker.on('click',()=>{
+      const st=STATUSES.find(s=>s.k===r.status)||STATUSES[4];
+      const noteText=r.note?(' — '+esc(r.note)):'';
+      toast(st.label+noteText,'');
+    });
+  });
+  
   if(showBubbles) bubbleLayer.addTo(map);
+  pointLayer.addTo(map); // Always show exact points
 }
 function refreshLayers(){ rebuildHeat(); rebuildBubbles(); }
 
