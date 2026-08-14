@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="NIPSCO Tracker"/>
 <title>NIPSCO TRUCK TRACKER</title>
-<link rel="icon" type="image/png" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/17a24e7b4-5d77-4a23-acc9-df8439fd83b4.png"/>
-<link rel="apple-touch-icon" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/17a24e7b4-5d77-4a23-acc9-df8439fd83b4.png"/>
+<link rel="icon" type="image/png" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png"/>
+<link rel="apple-touch-icon" href="https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png"/>
 <link rel="manifest" id="manifestLink"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/400.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/oswald@5.1.1/500.css"/>
@@ -20,14 +20,13 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-mono@5.1.1/700.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-/* ─────────────────────────── tokens ─────────────────────────── */
 :root{
   --bg:#101315; --panel:#181c20; --panel2:#131619; --line:#2a3037; --line2:#414a54;
   --text:#e7eaed; --muted:#8a939d;
   --accent:#ffb000; --accentTxt:#ffb000; --accentInk:#151006;
   --hot:#e5484d; --ok:#42a85d; --blue:#6aa7e0;
   --mapBg:#0d1012;
-  --shadow:6px 6px 0 rgba(0,0,0,.32); --shadowSm:3px 3px 0 rgba(0,0,0,.32);
+  --shadow:3px 3px 0 rgba(0,0,0,.30); --shadowSm:2px 2px 0 rgba(0,0,0,.30);
   --safeB:env(safe-area-inset-bottom,0px);
 }
 html[data-theme="light"]{
@@ -36,7 +35,7 @@ html[data-theme="light"]{
   --accent:#ffb000; --accentTxt:#7a5200; --accentInk:#151006;
   --hot:#bd2b31; --ok:#2c7a42; --blue:#2f6ea8;
   --mapBg:#cfccc4;
-  --shadow:6px 6px 0 rgba(0,0,0,.14); --shadowSm:3px 3px 0 rgba(0,0,0,.14);
+  --shadow:3px 3px 0 rgba(0,0,0,.13); --shadowSm:2px 2px 0 rgba(0,0,0,.13);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;border-radius:0!important}
 html,body{height:100%}
@@ -48,7 +47,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .mono{font-family:'Space Mono',monospace}
 .hidden{display:none!important}
 
-/* boot screen */
 #boot{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:14px}
 #boot.done{opacity:0;visibility:hidden;transition:.5s}
@@ -58,7 +56,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .cursor{animation:blink 1s steps(2) infinite;color:var(--accentTxt)}
 @keyframes blink{50%{opacity:0}}
 
-/* ─────────────────────────── header ─────────────────────────── */
 header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);border-bottom:1px solid var(--line2)}
 .brand{display:flex;align-items:center;gap:12px;padding:8px 16px;border-right:1px solid var(--line)}
 .mark{width:38px;height:38px;background:var(--accent);color:var(--accentInk);display:grid;place-items:center;
@@ -80,45 +77,31 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #themeBtn:hover{background:var(--line)}
 .hazard{flex:0 0 6px;background:repeating-linear-gradient(-45deg,var(--accent) 0 10px,var(--accentInk) 10px 20px)}
 
-/* corner brackets */
 .corners{position:relative}
 .corners::before,.corners::after{content:'';position:absolute;width:12px;height:12px;
   border:2px solid var(--accent);pointer-events:none;z-index:6}
 .corners::before{top:5px;left:5px;border-right:none;border-bottom:none}
 .corners::after{bottom:5px;right:5px;border-left:none;border-top:none}
 
-/* ─────────────────────────── map stage ─────────────────────────── */
 #mapWrap{position:relative;flex:1;min-height:0}
 #map{position:absolute;inset:0;background:var(--mapBg)}
 #map.targeting,#map.targeting .leaflet-container{cursor:crosshair!important}
 
-/* status strip */
 #statusBar{position:absolute;left:0;right:0;bottom:0;z-index:905;height:26px;display:flex;align-items:center;
   justify-content:space-between;padding:0 12px;background:var(--panel);border-top:1px solid var(--line2);
   font:400 10px 'Space Mono';letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
 #statusBar b{color:var(--accentTxt);font-weight:700}
 
-/* NWS strip */
-#nwsBanner{position:absolute;top:0;left:0;right:0;z-index:950;display:flex;align-items:center;gap:12px;
-  background:var(--panel);border-bottom:2px solid var(--hot);color:var(--text);padding:7px 14px;font-size:12px;letter-spacing:.06em}
-#nwsBanner .tag{font:700 10px 'Space Mono';letter-spacing:.12em;color:#fff;background:var(--hot);padding:3px 8px}
-#nwsBanner a{color:var(--accentTxt);font:700 11px 'Space Mono';text-decoration:underline}
-#nwsBanner .x{margin-left:auto;background:none;border:1px solid var(--line2);color:var(--muted);width:24px;height:24px;font-size:11px}
-#nwsBanner .x:hover{color:var(--text)}
-
-/* layers */
 .layers{position:absolute;top:12px;right:12px;z-index:930;display:flex;flex-direction:column;gap:6px}
-.layers.shifted{top:48px}
 .layerBtn{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);
   padding:10px 15px;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
   transition:transform .12s,background .12s,color .12s;box-shadow:var(--shadowSm)}
 .layerBtn:hover{color:var(--text);transform:translate(-1px,-1px)}
-.layerBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.layerBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
 .layerBtn.active{color:var(--accentInk);background:var(--accent);border-color:var(--accent)}
 .layerBtn .sq{width:8px;height:8px;background:currentColor;flex:0 0 8px}
 .layerBtn.na{opacity:.5}
 
-/* hint */
 #hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:960;display:flex;gap:10px;align-items:center;
   background:var(--panel);border:2px solid var(--accent);color:var(--text);padding:10px 14px;font-size:13px;font-weight:500;
   letter-spacing:.08em;box-shadow:var(--shadow);max-width:min(94%,580px)}
@@ -127,7 +110,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #hint .hBtn:active{transform:translate(1px,1px)}
 #hint .geo{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
 
-/* ─────────────────────────── panel ─────────────────────────── */
 #panel{position:absolute;top:12px;left:12px;bottom:38px;width:352px;z-index:1000;display:flex;flex-direction:column;
   background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shadow);overflow:hidden}
 #grab{display:none;width:30px;height:3px;background:var(--line2);margin:8px auto 0}
@@ -140,8 +122,8 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #reportBtn{width:100%;margin-top:12px;border:2px solid var(--accent);padding:13px 12px;min-height:50px;
   font-weight:600;font-size:15px;letter-spacing:.22em;color:var(--accentInk);background:var(--accent);
   box-shadow:var(--shadowSm);transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
-#reportBtn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(0,0,0,.35)}
-#reportBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.3)}
+#reportBtn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.3)}
+#reportBtn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
 #cdChip{font:700 12px 'Space Mono';background:var(--accentInk);color:var(--accent);padding:2px 7px}
 .panelScroll{flex:1;overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
 .panelScroll::-webkit-scrollbar{width:6px}.panelScroll::-webkit-scrollbar-thumb{background:var(--line2)}
@@ -177,7 +159,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .empty p{font:400 10.5px 'Space Mono';line-height:1.8}
 .footNote{padding:10px 14px calc(10px + var(--safeB));font:400 9px 'Space Mono';color:var(--muted);line-height:1.7;border-top:1px solid var(--line)}
 
-/* radar bar */
 #radarBar{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);z-index:920;display:flex;align-items:center;gap:11px;
   background:var(--panel);border:1px solid var(--line2);padding:9px 13px;box-shadow:var(--shadow);max-width:94%}
 #radarPlay{width:36px;height:36px;border:1px solid var(--line2);background:var(--panel2);color:var(--accentTxt);font-size:11px}
@@ -189,7 +170,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .opWrap{display:flex;align-items:center;gap:7px;font:400 9px 'Space Mono';color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 #radarOpacity{width:72px;accent-color:var(--accent)}
 
-/* legend */
 #legend{position:absolute;right:12px;bottom:44px;z-index:910;background:var(--panel);border:1px solid var(--line2);
   padding:12px 14px;box-shadow:var(--shadowSm);width:204px}
 #legend h4{font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
@@ -197,7 +177,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .gradLbls{display:flex;justify-content:space-between;font:400 9px 'Space Mono';color:var(--muted);margin-top:4px}
 #legend p{font:400 9.5px 'Space Mono';color:var(--muted);margin-top:8px;line-height:1.6;border-top:1px solid var(--line);padding-top:7px}
 
-/* modal */
 #modal{position:absolute;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(8,10,12,.75)}
 .modalCard{position:relative;width:min(430px,calc(100vw - 28px));max-height:calc(100vh - 48px);overflow-y:auto;
   background:var(--panel);border:2px solid var(--line2);padding:24px;box-shadow:var(--shadow);animation:pop .2s ease}
@@ -225,12 +204,11 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   font-weight:600;font-size:15px;letter-spacing:.24em;color:var(--accentInk);background:var(--accent);
   box-shadow:var(--shadowSm);transition:.12s;text-transform:uppercase}
 #submitBtn:disabled{background:var(--panel2);border-color:var(--line);color:var(--muted);box-shadow:none;cursor:not-allowed}
-#submitBtn:not(:disabled):hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(0,0,0,.35)}
-#submitBtn:not(:disabled):active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.3)}
+#submitBtn:not(:disabled):hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.3)}
+#submitBtn:not(:disabled):active{transform:translate(1px,1px);box-shadow:1px 1px 0 rgba(0,0,0,.28)}
 #cdNote{margin-top:9px;font:400 9.5px 'Space Mono';color:var(--muted);text-align:center;line-height:1.6}
 .expireHint{margin-top:7px;font:400 9.5px 'Space Mono';color:var(--muted);text-align:center;line-height:1.6}
 
-/* toasts */
 #toasts{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:4000;display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none}
 .toast{background:var(--panel);border:1px solid var(--line2);padding:10px 18px;font-size:12.5px;font-weight:500;letter-spacing:.08em;
   box-shadow:var(--shadowSm);animation:drop .25s ease;transition:.35s;max-width:92vw;text-align:center}
@@ -239,20 +217,21 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .toast.bye{opacity:0;transform:translateY(-8px)}
 @keyframes drop{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 
-/* pulse */
 .pulseWrap{background:none;border:none}
 .pulseRing{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;background:rgba(255,176,0,.35)}
 .pulseRing::after{content:'';position:absolute;inset:-5px;border:2px solid var(--accent);animation:ring 1.1s ease-out infinite}
 @keyframes ring{0%{transform:scale(.4);opacity:1}100%{transform:scale(3.2);opacity:0}}
 
-/* leaflet chrome */
 .leaflet-control-attribution{background:var(--panel)!important;color:var(--muted)!important;font:400 9px 'Space Mono'!important;border:1px solid var(--line)!important}
 .leaflet-control-attribution a{color:var(--muted)!important}
 .leaflet-bar{border:1px solid var(--line2)!important;box-shadow:var(--shadowSm)!important}
 .leaflet-bar a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
 .leaflet-bar a:hover{background:var(--line)!important}
+.leaflet-tooltip{background:var(--panel)!important;border:1px solid var(--line2)!important;color:var(--text)!important;
+  font:700 10px 'Space Mono'!important;letter-spacing:.05em;padding:6px 9px!important;box-shadow:var(--shadowSm)!important}
+.leaflet-tooltip-top:before{border-top-color:var(--line2)!important}
+.leaflet-tooltip-bottom:before{border-bottom-color:var(--line2)!important}
 
-/* ─────────────────────────── mobile ─────────────────────────── */
 @media(max-width:899px){
   .brand{padding:8px 12px;gap:9px}
   .brand h1{font-size:13px;letter-spacing:.1em}
@@ -265,33 +244,25 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   .syncTag{font-size:9px;padding:3px 6px}
   #themeBtn{width:46px}
   #statusBar{display:none}
-  #nwsBanner{font-size:10px;padding:6px 10px;gap:8px}
-  #nwsBanner a{display:none}
-  #hint{top:44px;font-size:11px;padding:10px;gap:8px;flex-wrap:wrap;justify-content:center}
+  #hint{top:14px;font-size:11px;padding:10px;gap:8px;flex-wrap:wrap;justify-content:center}
   #hint .hBtn{padding:12px 14px;font-size:11px}
   #legend{display:none}
-
   .layers{top:auto;bottom:calc(var(--sheetH,170px) + 12px);right:auto;left:10px;flex-direction:row;
     max-width:calc(100vw - 20px);overflow-x:auto;gap:6px;padding-bottom:2px}
-  .layers.shifted{top:auto}
   .layerBtn{padding:12px 13px;font-size:10.5px;flex:0 0 auto;min-height:44px}
-
   #panel{top:auto;left:0;right:0;bottom:0;width:auto;border-left:none;border-right:none;border-bottom:none;
     border-top:2px solid var(--line2);box-shadow:none;max-height:none;transition:max-height .28s ease}
-  #panel.collapsed .panelScroll,#panel.collapsed .footNote{display:flex}
   #grab{display:block}
   .pHead{padding:6px 12px calc(12px + var(--safeB));cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
   .pHead:active{cursor:grabbing}
   .statRow{margin-top:8px}
   #reportBtn{min-height:54px}
-
   #radarBar{left:10px;right:10px;transform:none;bottom:calc(var(--sheetH,170px) + 12px);
     justify-content:center;padding:10px;max-width:none}
   #radarPlay{width:44px;height:44px;font-size:13px}
   #radarScrub{flex:1;width:auto;min-width:60px;height:32px}
   .opWrap,.rTag{display:none}
   #radarTime{min-width:58px;font-size:12px}
-
   #modal{align-items:flex-end}
   .modalCard{width:100%;max-height:88vh;border-left:none;border-right:none;border-bottom:none;
     padding:20px 16px calc(22px + var(--safeB))}
@@ -332,13 +303,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 
 <div id="mapWrap">
   <div id="map"></div>
-
-  <div id="nwsBanner" class="hidden">
-    <span class="tag">NWS</span>
-    <span id="nwsText"></span>
-    <a href="https://forecast.weather.gov/showsigwx.php?warnzone=IN" target="_blank" rel="noopener">DETAILS</a>
-    <button class="x" id="nwsClose">✕</button>
-  </div>
 
   <div class="layers" id="layerStack">
     <button class="layerBtn active" id="heatToggle"><span class="sq"></span>Heat</button>
@@ -390,7 +354,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 
   <div id="statusBar">
     <span>POS <b id="cCoord">41.320 / -86.900</b></span>
-    <span>GRID — NORTHERN INDIANA · NIPSCO TERRITORY</span>
+    <span id="cGrid">GRID — NORTHERN INDIANA · NIPSCO TERRITORY</span>
     <span><b id="cClock">--:--:--</b> · <b id="cZoom">Z8</b></span>
   </div>
 
@@ -428,9 +392,8 @@ const FIREBASE_CONFIG = {
   measurementId: "G-NJQWG293Z7"
 };
 
-/* PWA manifest (built at runtime, keeps this a single file) */
 (function(){
-  const ico='https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/17a24e7b4-5d77-4a23-acc9-df8439fd83b4.png';
+  const ico='https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png';
   const m={name:'NIPSCO Truck Tracker',short_name:'NIPSCO Tracker',start_url:'.',display:'standalone',
     background_color:'#101315',theme_color:'#101315',icons:[{src:ico,sizes:'512x512',type:'image/png'}]};
   document.getElementById('manifestLink').href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(m));
@@ -492,7 +455,61 @@ const CITIES = [
   ['Goshen',41.5823,-85.8344],['Plymouth',41.3437,-86.3097],['Warsaw',41.2381,-85.8539],['Fort Wayne',41.0793,-85.1394],
   ['Kokomo',40.4864,-86.1336],['Lafayette',40.4168,-86.8753],['Logansport',40.7545,-86.3567],['Peru',40.7539,-86.0683],
   ['Huntington',40.8831,-85.4972],['Munster',41.5514,-87.5125],['Schererville',41.4917,-87.4548],['Griffith',41.5284,-87.4237],
-  ['East Chicago',41.6395,-87.4547],['Rensselaer',40.9361,-87.1517],['Kendallville',41.4412,-85.2650],['Columbia City',41.1570,-85.4883]
+  ['East Chicago',41.6395,-87.4547],['Rensselaer',40.9361,-87.1517],['Kendallville',41.4412,-85.2650],['Columbia City',41.1570,-85.4883],
+  ['Whiting',41.6798,-87.4945],['Highland',41.5536,-87.4542],['Dyer',41.4942,-87.5217],['St John',41.4506,-87.4786],
+  ['Lowell',41.2914,-87.4203],['Hebron',41.3231,-87.2036],['Kouts',41.3334,-87.0270],['De Motte',41.1953,-87.2000],
+  ['Demotte',41.1953,-87.2000],['Wheatfield',41.2145,-87.0686],['Beverly Shores',41.6789,-86.9781],['Wanatah',41.4384,-86.8972],
+  ['Union Mills',41.5381,-86.7083],['Westville',41.5486,-86.7136],['Kingsbury',41.5703,-86.6361],['La Crosse',41.3145,-86.8942],
+  ['Winamac',41.0514,-86.6030],['Monterey',41.1664,-86.4889],['Francesville',41.0517,-86.8689],['Medaryville',41.1164,-86.9903],
+  ['Wolcott',40.7748,-86.9989],['Burnettsville',40.7634,-86.7986],['Monon',40.8659,-86.8711],['Reynolds',40.7492,-86.8722],
+  ['Brookston',40.5486,-86.7236],['Chalmers',40.6564,-86.8781],['Battle Ground',40.5089,-86.8372],['Dayton',40.3778,-86.7444],
+  ['Shadeland',40.3381,-86.8756],['Romney',40.2820,-86.9217],['Attica',40.2923,-87.2417],['Covington',40.1378,-87.3939],
+  ['Veedersburg',40.1134,-87.2564],['Fowler',40.6148,-87.3181],['Otterbein',40.5103,-87.0864],['Boswell',40.5034,-87.3306],
+  ['Kentland',40.7720,-87.4436],['Morocco',40.9470,-87.4520],['Goodland',40.7436,-87.3942],['Brook',40.8736,-87.3636],
+  ['Fair Oaks',40.9178,-87.3336],['Ambia',40.4867,-87.5161],['Earl Park',40.4698,-87.4120],['New Carlisle',41.7187,-86.4783],
+  ['Walkerton',41.4684,-86.4820],['North Liberty',41.5334,-86.4236],['Tyner',41.3717,-86.5408],['Bourbon',41.2956,-86.1161],
+  ['Etna Green',41.2767,-86.0575],['Mentone',41.1742,-86.0633],['Akron',41.1750,-86.1500],['Nappanee',41.6292,-86.0003],
+  ['Wakarusa',41.5539,-86.0192],['Middlebury',41.6331,-85.7022],['Bremen',41.4481,-86.1495],['Syracuse',41.4212,-85.7297],
+  ['Milford',41.4137,-85.8483],['North Webster',41.3334,-85.7069],['Silver Lake',41.1631,-85.8894],['Claypool',41.1320,-85.8805],
+  ['Pierceton',41.1973,-85.7083],['Winona Lake',41.2292,-85.8219],['North Manchester',41.0006,-85.7694],['Roanoke',40.9620,-85.3705],
+  ['Churubusco',41.2228,-85.3455],['Avilla',41.3550,-85.2555],['Rome City',41.4914,-85.3408],['Albion',41.2962,-85.3336],
+  ['Ligonier',41.4564,-85.5897],['Topeka',41.5434,-85.5625],['Howe',41.5764,-85.4231],['Lagrange',41.3539,-85.4186],
+  ['Shipshewana',41.6617,-85.5419],['Angola',41.6348,-84.9994],['Fremont',41.5489,-84.9336],['Waterloo',41.4331,-85.0219],
+  ['Auburn',41.3664,-85.0555],['Garrett',41.3506,-85.2633],['Ashley',41.4220,-85.2344],['Butler',41.3087,-84.8716],
+  ['Bluffton',40.7387,-85.1714],['Decatur',40.8281,-84.9247],['Monroeville',41.0064,-84.8916],['New Haven',41.0706,-85.0127],
+  ['Woodburn',41.1162,-84.8636],['Grabill',41.2117,-85.0664],['Markle',40.8262,-85.3319],['Ossian',40.8792,-85.3236],
+  ['Liberty Center',40.8098,-85.2780],['Warren',40.6828,-85.4116],['Andrews',40.8612,-85.5980],['Converse',40.5484,-85.8786],
+  ['Swayzee',40.5800,-85.8350],['Sweetser',40.5609,-85.7611],['Gas City',40.4867,-85.6083],['Jonesboro',40.5234,-85.5272],
+  ['Upland',40.4773,-85.4966],['Fairmount',40.4087,-85.6466],['Hartford City',40.4509,-85.3694],['Dunkirk',40.3837,-85.2077],
+  ['Redkey',40.3181,-85.2772],['Portland',40.4348,-84.9800],['Berne',40.6587,-84.9519],['Pennville',40.4131,-85.1503],
+  ['Tipton',40.2792,-86.0394],['Elwood',40.2787,-85.8383],['Alexandria',40.2606,-85.6794],['Summitville',40.3631,-85.6761],
+  ['Frankton',40.2223,-85.7289],['Lapel',40.0081,-85.7486],['Arcadia',40.2131,-86.0011],['Atlanta',40.1173,-86.2369],
+  ['Sheridan',40.1320,-86.2172],['Cicero',40.1323,-86.0208],['Windfall',40.1536,-86.0222],['Sharpsville',40.3742,-85.9189],
+  ['Hemlock',40.3467,-86.0761],['Bunker Hill',40.6500,-85.9694],['Galveston',40.5736,-86.2014],['Walton',40.6656,-86.3394],
+  ['Russiaville',40.4148,-86.1308],['Greentown',40.4684,-85.9642],['Burlington',40.4731,-86.3936],['Camden',40.6034,-86.5411],
+  ['Delphi',40.5875,-86.6755],['Flora',40.5503,-86.5255],['Monticello',40.7456,-86.7647],['Kewanna',41.0161,-86.4089],
+  ['Royal Center',40.8925,-86.4400],['Macy',40.9134,-86.1433],['Rochester',41.0614,-86.2189],['Knox',41.2942,-86.6236],
+  ['Culver',41.2228,-86.4289],['Argos',41.2373,-86.2200],['Grovertown',41.3573,-86.5328],['Hamlet',41.3700,-86.6011],
+  ['San Pierre',41.2414,-86.7058],['Star City',40.8178,-86.5336],['Wabash',40.7978,-85.8219],['Marion',40.5584,-85.6591],
+  ['Muncie',40.1953,-85.3863],['Anderson',40.1053,-85.6803],['New Castle',39.9289,-85.3702],['Rushville',39.6089,-85.4458],
+  ['Connersville',39.6412,-85.1414],['Greensburg',39.3370,-85.4830],['Shelbyville',39.5214,-85.7772],['Franklin',39.4806,-86.0550],
+  ['Greenfield',39.7853,-85.7697],['Indianapolis',39.7684,-86.1581],['Fishers',39.9568,-86.0139],['Lawrence',39.8387,-85.9986],
+  ['Lebanon',40.0470,-86.4683],['Crawfordsville',40.0409,-86.9000],['Frankfort',40.2792,-86.5108],['Noblesville',40.0456,-86.0086],
+  ['Westfield',40.0428,-86.1180],['Carmel',39.9784,-86.1180],['Winchester',40.1731,-84.9808],['Union City',40.1928,-84.8064],
+  ['Versailles',39.0137,-85.2603],['Osgood',39.1353,-85.2908],['Batesville',39.3006,-85.2227],['Brookville',39.4220,-84.9983],
+  ['Seymour',38.9592,-85.8908],['North Vernon',38.9953,-85.6247],['Columbus',39.2014,-85.9213],['Bloomington',39.1653,-86.5264],
+  ['Spencer',39.2870,-86.7647],['Nashville',39.2073,-86.2489],['Martinsville',39.4206,-86.4508],['Mooresville',39.6120,-86.3747],
+  ['Plainfield',39.7042,-86.3483],['Brownsburg',39.8428,-86.3956],['Avon',39.7603,-86.3997],['Danville',39.7606,-86.5264],
+  ['Greencastle',39.6445,-86.8647],['Cloverdale',39.5192,-86.8711],['Rockville',39.7642,-87.2261],['Newport',39.8814,-87.4083],
+  ['Williamsport',40.2823,-87.2853],['Perrysville',40.0278,-87.4656],['Terre Haute',39.4667,-87.4139],['Brazil',39.5237,-87.1272],
+  ['Clinton',39.6778,-87.4089],['Linton',39.0928,-87.1636],['Sullivan',39.0942,-87.4131],['Jasonville',39.1928,-87.2189],
+  ['Worthington',39.1192,-86.9836],['Vincennes',38.6773,-87.5248],['Washington',38.6592,-87.1731],['Princeton',38.3531,-87.5667],
+  ['Petersburg',38.4928,-87.2792],['Tell City',37.9520,-86.7669],['Jasper',38.3914,-86.9311],['Huntingburg',38.2978,-86.9542],
+  ['Boonville',38.0478,-87.2739],['Evansville',37.9748,-87.5558],['Mount Vernon',37.9331,-87.8942],['Oakland City',38.3373,-87.3481],
+  ['Jeffersonville',38.2776,-85.7372],['New Albany',38.2856,-85.8241],['Clarksville',38.2967,-85.7600],['Corydon',38.2120,-86.1219],
+  ['Charlestown',38.4506,-85.6680],['Sellersburg',38.4006,-85.7558],['Scottsburg',38.6856,-85.7702],['Salem',38.6034,-86.0992],
+  ['Bedford',38.8612,-86.4872],['Mitchell',38.7292,-86.4753],['Paoli',38.5562,-86.4689],['French Lick',38.5506,-86.6189],
+  ['Madison',38.7359,-85.3797],['Millersburg',41.4023,-85.8344],['Bristol',41.7223,-85.5836]
 ];
 function nearestCity(lat,lng){
   let best='Northern Indiana', bd=1e9;
@@ -518,7 +535,6 @@ function applyTheme(){
   baseLayer.setUrl(darkTheme?DARK_TILES:LIGHT_TILES);
   baseLayer.addTo(map);
   $('#themeBtn').textContent = darkTheme ? '☀' : '☾';
-  $('#themeBtn').title = darkTheme ? 'Switch to day map' : 'Switch to night map';
 }
 $('#themeBtn').addEventListener('click',()=>{
   darkTheme=!darkTheme; LS.rawSet(K_THEME, darkTheme?'dark':'light'); applyTheme();
@@ -560,7 +576,7 @@ function rebuildBubbles(){
 }
 function refreshLayers(){ rebuildHeat(); rebuildBubbles(); }
 
-/* status strip live data */
+/* status strip */
 const cCoord=$('#cCoord'), cZoom=$('#cZoom'), cClock=$('#cClock');
 map.on('mousemove',e=>{ cCoord.textContent=e.latlng.lat.toFixed(3)+' / '+e.latlng.lng.toFixed(3); });
 function updZoom(){ cZoom.textContent='Z'+map.getZoom(); }
@@ -604,21 +620,6 @@ $('#radarToggle').addEventListener('click',async()=>{
   radarBar.classList.toggle('hidden',!radarOn);
   if(radarOn){showRadarFrame(radarIdx);} else{stopRadarPlay();radarLayers.forEach(l=>{if(l)map.removeLayer(l);});}
   layoutBottom(); });
-
-/* ================= NWS weather alerts (free, keyless) ================= */
-async function loadAlerts(){
-  try{
-    const r=await fetch('https://api.weather.gov/alerts/active?area=IN');
-    const d=await r.json();
-    const feats=(d.features||[]).filter(f=>{const s=f.properties&&f.properties.severity;
-      return s==='Extreme'||s==='Severe'||s==='Moderate';});
-    if(feats.length){ $('#nwsBanner').classList.remove('hidden');
-      $('#nwsText').textContent=feats.length+' ACTIVE WEATHER ALERT'+(feats.length>1?'S':'')+' — '+feats[0].properties.event.toUpperCase();
-      $('#layerStack').classList.add('shifted');
-    } else { $('#nwsBanner').classList.add('hidden'); $('#layerStack').classList.remove('shifted'); }
-  }catch(e){}
-}
-$('#nwsClose').addEventListener('click',()=>{ $('#nwsBanner').classList.add('hidden'); $('#layerStack').classList.remove('shifted'); });
 
 /* ================= toasts & pulse ================= */
 function toast(msg,type){ const t=document.createElement('div'); t.className='toast '+(type||''); t.textContent=msg;
@@ -694,7 +695,7 @@ $('#hintGeo').addEventListener('click',()=>{
 map.on('click',e=>{ if(targeting) useLoc(e.latlng.lat,e.latlng.lng,false); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!modal.classList.contains('hidden'))closeModal(); else stopTargeting(); } });
 
-/* draggable bottom sheet (mobile) */
+/* draggable bottom sheet */
 function collapsedH(){ return sheetHead.offsetHeight + 10; }
 function openH(){ return Math.round(Math.min(innerHeight*0.72, 640)); }
 function setSheet(open){
@@ -849,7 +850,7 @@ if(syncMode){ startSync(); }
 else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
   reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
   reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }
-tickCooldown(); initRadar(); loadAlerts(); setInterval(loadAlerts,300000);
+tickCooldown(); initRadar();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
 layoutBottomSoon();
