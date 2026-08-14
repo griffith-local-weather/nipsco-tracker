@@ -531,8 +531,15 @@ if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toSt
 
 /* ================= Firebase ================= */
 let db=null, syncMode=false, reports=[], announcements=[], dismissedAnnouncementIds=new Set();
+let announcementListener=null, reportsListener=null;
 if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
-  try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); syncMode=true; }catch(e){ syncMode=false; }
+  try{ 
+    firebase.initializeApp(FIREBASE_CONFIG); 
+    db=firebase.firestore(); 
+    // Enable offline persistence to cache data and reduce reads
+    db.enablePersistence().catch(err=>{ console.log('Persistence error:',err); });
+    syncMode=true; 
+  }catch(e){ syncMode=false; }
 }
 const syncTag=$('#syncTag');
 function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.className='syncTag '+(syncMode?'live':'local'); }
@@ -542,7 +549,8 @@ paintSyncBadge();
 function startAnnouncementSync(){
   if(!syncMode) return;
   // Listen to all active announcements (no orderBy to avoid index requirement)
-  db.collection('announcements').where('active','==',true)
+  // Store listener reference so we can detach if needed
+  announcementListener = db.collection('announcements').where('active','==',true)
     .onSnapshot(snap=>{
       announcements=[];
       snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
@@ -629,7 +637,9 @@ const urlSpot = new URLSearchParams(location.search).get('spot');
 let pendingSpot = urlSpot || null;
 
 function startSync(){
-  db.collection('reports').where('ts','>', Date.now()-MAX_SYNC_MS)
+  // Use onSnapshot for real-time updates (only charges for changes, not repeated reads)
+  // Store listener reference so we can detach if needed
+  reportsListener = db.collection('reports').where('ts','>', Date.now()-MAX_SYNC_MS)
     .onSnapshot(snap=>{
       reports=[];
       snap.forEach(d=>{ const r=d.data(); r.id=d.id;
