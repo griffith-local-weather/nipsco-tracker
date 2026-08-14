@@ -350,7 +350,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
     <div class="legendRow"><span class="houseIcon off"></span> Reported: Power OFF</div>
     <div class="legendRow"><span class="houseIcon on"></span> Reported: Power ON</div>
     <div class="legendRow"><span class="houseIcon unknown"></span> No Report (Unknown)</div>
-    <p>🔴 Red = Outage | 🟢 Green = Power On | ⚪ Gray = Unknown. Locations fuzzed ±200m for privacy.</p>
+    <p>🔴 Red = Outage | 🟢 Green = Power On | ⚪ Gray = Unknown. Exact locations shown on map.</p>
   </div>
 
   <div id="statusBar">
@@ -571,9 +571,6 @@ function nearestCity(lat,lng){
     const d=Math.sqrt(dy*dy+dx*dx)*111.32; if(d<bd){bd=d;best=c[0];} }
   return bd<=35 ? 'near '+best : 'near '+best;
 }
-function fuzz(lat,lng){ const g=0.002;
-  return [ +(Math.round(lat/g)*g + (Math.random()-0.5)*g*0.8).toFixed(5),
-           +(Math.round(lng/g)*g + (Math.random()-0.5)*g*0.8).toFixed(5) ]; }
 
 /* ================= map & theme ================= */
 const DARK_TILES='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -746,8 +743,8 @@ function isMobile(){ return innerWidth<900; }
 function startTargeting(){ targeting=true; mapEl.classList.add('targeting'); hint.classList.remove('hidden');
   if(isMobile()) setSheet(false); }
 function stopTargeting(){ targeting=false; mapEl.classList.remove('targeting'); hint.classList.add('hidden'); }
-function useLoc(lat,lng,pan){ const [fla,fln]=fuzz(lat,lng); pendingLoc={lat:fla,lng:fln};
-  stopTargeting(); if(pan)map.setView([fla,fln],Math.max(map.getZoom(),12)); openModal(); }
+function useLoc(lat,lng,pan){ pendingLoc={lat:lat,lng:lng};
+  stopTargeting(); if(pan)map.setView([lat,lng],Math.max(map.getZoom(),12)); openModal(); }
 reportBtn.addEventListener('click',e=>{ e.stopPropagation(); if(targeting){stopTargeting();return;} startTargeting(); });
 $('#hintCancel').addEventListener('click',stopTargeting);
 $('#hintGeo').addEventListener('click',()=>{
@@ -807,7 +804,7 @@ function buildStatusGrid(){
 }
 function openModal(){
   locBox.innerHTML='≈ '+pendingLoc.lat.toFixed(3)+', '+pendingLoc.lng.toFixed(3)
-    +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(FUZZED ±200M)</span>';
+    +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(EXACT LOCATION)</span>';
   locBox.classList.add('has'); buildStatusGrid();
   expireHint.textContent='REPORTS PERSIST INDEFINITELY.';
   modal.classList.remove('hidden'); tickCooldown();
@@ -835,7 +832,7 @@ function tickCooldown(){
     else if(cap){ submitBtn.disabled=true; submitBtn.textContent='HOURLY LIMIT REACHED'; }
     else{ submitBtn.disabled=false; submitBtn.textContent='SUBMIT REPORT'; }
     cdNote.textContent=rem>0?'ONE REPORT PER MINUTE PER DEVICE.':cap?'YOU REACHED THE '+HOURLY_CAP+'-REPORTS-PER-HOUR LIMIT.'
-      :'RATE LIMITED: 1/MIN · '+HOURLY_CAP+'/HR. LOCATIONS ARE FUZZED FOR PRIVACY.';
+      :'RATE LIMITED: 1/MIN · '+HOURLY_CAP+'/HR. EXACT LOCATIONS SHOWN.';
   }
 }
 setInterval(tickCooldown,500);
