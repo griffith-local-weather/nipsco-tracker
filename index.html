@@ -332,7 +332,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
       <div class="statRow">
         <div class="mini"><b id="statTotal">0</b><span>ACTIVE</span></div>
         <div class="mini"><b id="statHot">0</b><span>HOTSPOTS</span></div>
-        <div class="mini"><b id="statNext">—</b><span>EXPIRES</span></div>
+        <div class="mini"><b id="statNext">—</b><span>PERSISTENT</span></div>
       </div>
       <button id="reportBtn"><span>REPORT TRUCK</span><span id="cdChip" class="hidden"></span></button>
     </div>
@@ -1049,17 +1049,17 @@ addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; schedu
 
 function buildStatusGrid(){
   statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
-    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small>~'+esc(TTL_MIN[s.k])+'m</small></button>').join('');
+    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'</button>').join('');
   statusGrid.querySelectorAll('.stChip').forEach(b=>b.addEventListener('click',()=>{
     selStatus=b.dataset.k; buzz(8);
     statusGrid.querySelectorAll('.stChip').forEach(x=>x.classList.toggle('sel',x===b));
-    expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.'; }));
+    expireHint.textContent='REPORTS PERSIST INDEFINITELY.'; }));
 }
 function openModal(){
   locBox.innerHTML='≈ '+pendingLoc.lat.toFixed(3)+', '+pendingLoc.lng.toFixed(3)
     +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(FUZZED ±400 M)</span>';
   locBox.classList.add('has'); buildStatusGrid();
-  expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.';
+  expireHint.textContent='REPORTS PERSIST INDEFINITELY.';
   modal.classList.remove('hidden'); tickCooldown();
 }
 function closeModal(){ modal.classList.add('hidden'); pendingLoc=null; noteIn.value=''; }
@@ -1138,7 +1138,7 @@ submitBtn.addEventListener('click',async()=>{
     catch(e){ submitBtn.disabled=false; submitBtn.textContent='SUBMIT SIGHTING';
       toast('COULD NOT REACH THE LIVE DATABASE — CHECK FIRESTORE RULES','warn'); return; }
     closeModal(); pulse(rep);
-    toast('SIGHTING BROADCAST — EXPIRES IN ~'+TTL_MIN[rep.status]+' MIN','ok');
+    toast('SIGHTING BROADCAST — REPORT ADDED TO MAP','ok');
   }else{
     rep.id=Date.now().toString(36); reports.push(rep); LS.set(K_REP,reports);
     afterChange(); closeModal(); pulse(rep); toast('SIGHTING LOGGED (LOCAL DEMO MODE)','ok');
@@ -1204,12 +1204,11 @@ function renderStats(){
   const cells={}; active.forEach(r=>{ const k=Math.round(r.lat/0.01)+':'+Math.round(r.lng/0.01); cells[k]=(cells[k]||0)+1; });
   const hot=Object.values(cells).filter(c=>c>=2).length;
   $('#statHot').textContent=hot; $('#statHotTop').textContent=hot;
-  if(active.length){ const next=Math.min(...active.map(r=>ttlOf(r)-(Date.now()-r.ts)));
-    $('#statNext').textContent=Math.max(0,Math.ceil(next/60000))+'m'; }
-  else $('#statNext').textContent='—';
+  // Reports persist indefinitely, so no expiration countdown needed
+  $('#statNext').textContent='—';
 }
 setInterval(()=>{ const before=reports.length;
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
+  // Reports no longer expire - they persist indefinitely
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
   // Only refresh if something changed to avoid unnecessary renders
   if(reports.length !== before || syncMode) {
@@ -1233,7 +1232,8 @@ applyTheme();
 if(syncMode){ startSync(); startAnnouncementSync(); }
 else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
   reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }
+  // Reports no longer expire on load - keep all reports
+  afterChange(); }
 tickCooldown(); initRadar();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
@@ -1261,7 +1261,7 @@ if(!hasSeenOnboarding){
           '<li>TAP <b style="color:var(--text)">REPORT TRUCK</b> to log a sighting</li>'+
           '<li>Use <b style="color:var(--text)">HEAT</b> to see density hotspots</li>'+
           '<li>Toggle <b style="color:var(--text)">BUBBLES</b> for cluster view — click bubbles to see details</li>'+
-          '<li>Reports auto-expire in ~1 hour</li>'+
+          '<li>Reports persist indefinitely on the map</li>'+
           '<li>▲ confirms, ▼ flags wrong reports</li>'+
         '</ul>'+
       '</div>'+
