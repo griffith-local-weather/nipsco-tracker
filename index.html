@@ -313,6 +313,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
     <button class="layerBtn active" id="heatToggle"><span class="sq"></span>Heat</button>
     <button class="layerBtn" id="bubbleToggle"><span class="sq"></span>Bubbles</button>
     <button class="layerBtn" id="radarToggle"><span class="sq"></span>Radar</button>
+    <button class="layerBtn" id="trafficToggle"><span class="sq"></span>Traffic</button>
   </div>
 
   <div id="hint" class="hidden">
@@ -391,6 +392,10 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
       <label class="lbl">Duration (minutes)</label>
       <input type="number" id="adminDuration" class="mIn" value="60" min="5" max="1440" step="5" style="margin-bottom:16px"/>
       <button id="adminSend" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase">Send to All Users</button>
+      
+      <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt);margin-top:24px;margin-bottom:12px">Active Announcements</h4>
+      <div id="adminAnnouncementsList" style="max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
+      
       <p id="adminUserDisplay" style="margin-top:12px;font:400 9px 'Space Mono';color:var(--muted);line-height:1.6"></p>
       <p style="margin-top:8px;font:400 9px 'Space Mono';color:var(--muted);line-height:1.6">Tip: Press <kbd style="background:var(--panel2);padding:2px 6px;border:1px solid var(--line)">Ctrl+M</kbd> to toggle this panel</p>
     </div>
@@ -567,6 +572,39 @@ function renderAnnouncements(){
       $('#announcementText').style.color='var(--accentInk)';
     }
   }
+  renderAdminAnnouncementsList();
+}
+
+function renderAdminAnnouncementsList(){
+  const listEl = document.getElementById('adminAnnouncementsList');
+  if(!listEl) return;
+  const now=Date.now();
+  const active=announcements.filter(a=>{
+    const expires=a.expires||0;
+    return !a.hidden && (expires===0 || now<expires);
+  });
+  if(active.length===0){
+    listEl.innerHTML = '<p style="font:400 10px \'Space Mono\';color:var(--muted)">No active announcements</p>';
+    return;
+  }
+  listEl.innerHTML = active.map(a=>{
+    const expiresStr = a.expires ? new Date(a.expires).toLocaleString() : 'Never';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--line);margin-bottom:6px;background:var(--panel2)">
+      <div style="flex:1;min-width:0">
+        <div style="font:600 11px \'Space Mono\';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.message||''}</div>
+        <div style="font:400 9px \'Space Mono\';color:var(--muted)">Expires: ${expiresStr}</div>
+      </div>
+      <button onclick="deleteAnnouncement('${a.id}')" style="background:var(--hot);color:#fff;border:none;padding:6px 10px;font-size:12px;cursor:pointer;margin-left:8px">Delete</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteAnnouncement(id){
+  if(!confirm('Delete this announcement?')) return;
+  if(!syncMode){ toast('LOCAL MODE - CANNOT DELETE','warn'); return; }
+  db.collection('announcements').doc(id).delete()
+    .then(()=>{ toast('Announcement deleted','ok'); })
+    .catch(e=>{ toast('Delete failed','warn'); console.error(e); });
 }
 
 function broadcastMessage(message, style='normal', durationMin=60){
@@ -1119,6 +1157,14 @@ setInterval(()=>{ const before=reports.length;
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
+let trafficOn = false;
+const trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20, attribution:'© Google' });
+$('#trafficToggle').addEventListener('click',()=>{ 
+  trafficOn = !trafficOn; 
+  $('#trafficToggle').classList.toggle('active', trafficOn);
+  if(trafficOn) trafficLayer.addTo(map);
+  else map.removeLayer(trafficLayer);
+});
 
 /* ================= boot ================= */
 applyTheme();
