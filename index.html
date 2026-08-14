@@ -526,10 +526,13 @@ paintSyncBadge();
 /* ================= Announcements ================= */
 function startAnnouncementSync(){
   if(!syncMode) return;
-  db.collection('announcements').where('active','==',true).orderBy('ts','desc').limit(5)
+  // Listen to all active announcements (no orderBy to avoid index requirement)
+  db.collection('announcements').where('active','==',true)
     .onSnapshot(snap=>{
       announcements=[];
       snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
+      // Sort client-side by timestamp
+      announcements.sort((a,b) => (b.ts||0) - (a.ts||0));
       renderAnnouncements();
     }, err=>{ console.log('Announcement sync error:',err); });
 }
