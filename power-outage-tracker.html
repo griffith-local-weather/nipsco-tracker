@@ -130,6 +130,12 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .feedTitle{padding:14px 14px 8px;font-size:10px;font-weight:600;letter-spacing:.26em;color:var(--muted);
   display:flex;justify-content:space-between;align-items:center;text-transform:uppercase}
 .ftL{display:flex;align-items:center;gap:8px}
+.refreshRow{display:flex;align-items:center;gap:10px;margin-left:auto}
+#refreshBtn{border:1px solid var(--line2);background:var(--panel2);color:var(--muted);padding:6px 10px;
+  font:700 10px 'Space Mono';transition:.12s;display:flex;align-items:center;gap:6px}
+#refreshBtn:hover{color:var(--text);border-color:var(--accentTxt)}
+#refreshBtn:active{transform:translate(1px,1px)}
+#nextRefresh{font:400 9px 'Space Mono';color:var(--muted);letter-spacing:.08em}
 .feedItem{display:flex;flex-direction:column;gap:4px;padding:10px 14px 10px 12px;border-bottom:1px solid var(--line);
   border-left:3px solid var(--muted);animation:fadeIn .25s ease;transition:background .15s}
 .feedItem:hover{background:var(--panel2)}
@@ -338,6 +344,10 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
     <div class="panelScroll">
       <div class="feedTitle">
         <span class="ftL"><span class="led"></span>LIVE FEED</span>
+        <div class="refreshRow">
+          <span id="nextRefresh" class="mono"></span>
+          <button id="refreshBtn" title="Refresh now">⟳ REFRESH</button>
+        </div>
         <span id="feedCount" class="mono"></span>
       </div>
       <div id="feed"></div>
@@ -521,6 +531,9 @@ $('#announcementClose').addEventListener('click',()=>{
 const urlSpot = new URLSearchParams(location.search).get('spot');
 let pendingSpot = urlSpot || null;
 
+let nextRefreshTime = 0;
+const REPORT_POLL_MS = 45000;
+
 async function fetchReports(){
   if(!syncMode) return;
   try{
@@ -545,8 +558,12 @@ async function fetchReports(){
 
 function startSync(){
   fetchReports();
+  nextRefreshTime = Date.now() + REPORT_POLL_MS;
   // Poll every 45 seconds - balances freshness with read costs
-  reportsPollTimer = setInterval(fetchReports, 45000);
+  reportsPollTimer = setInterval(()=>{
+    fetchReports();
+    nextRefreshTime = Date.now() + REPORT_POLL_MS;
+  }, REPORT_POLL_MS);
 }
 let layoutPending = false;
 function afterChange(){ 
@@ -845,6 +862,17 @@ function tickCooldown(){
     cdNote.textContent=rem>0?'ONE REPORT PER MINUTE PER DEVICE.':cap?'YOU REACHED THE '+HOURLY_CAP+'-REPORTS-PER-HOUR LIMIT.'
       :'RATE LIMITED: 1/MIN · '+HOURLY_CAP+'/HR. EXACT LOCATIONS SHOWN.';
   }
+  // Update next refresh countdown
+  const nextRefEl = document.getElementById('nextRefresh');
+  if(nextRefEl && nextRefreshTime > 0){
+    const msLeft = nextRefreshTime - Date.now();
+    if(msLeft <= 0){
+      nextRefEl.textContent = 'REFRESHING...';
+    }else{
+      const sec = Math.ceil(msLeft / 1000);
+      nextRefEl.textContent = 'NEXT: '+sec+'s';
+    }
+  }
 }
 setInterval(tickCooldown,500);
 
@@ -951,6 +979,15 @@ $('#trafficToggle').addEventListener('click',()=>{
   $('#trafficToggle').classList.toggle('active', trafficOn);
   if(trafficOn) trafficLayer.addTo(map);
   else map.removeLayer(trafficLayer);
+});
+
+// Manual refresh button
+document.getElementById('refreshBtn').addEventListener('click', ()=>{
+  if(syncMode){
+    fetchReports();
+    nextRefreshTime = Date.now() + REPORT_POLL_MS;
+    toast('REFRESHED','ok');
+  }
 });
 
 /* ================= boot ================= */
