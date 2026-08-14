@@ -457,6 +457,9 @@ function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.
 paintSyncBadge();
 
 /* ================= Announcements ================= */
+// Cache to avoid redundant renders
+let lastAnnouncementRender = null;
+
 async function fetchAnnouncements(){
   if(!syncMode) return;
   try{
@@ -465,15 +468,22 @@ async function fetchAnnouncements(){
       .get();
     announcements=[];
     snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
-    renderAnnouncements();
-    renderFeed();
+    
+    // Only re-render if announcements actually changed
+    const newHash = announcements.map(a=>a.id+a.ts).join('|');
+    if(newHash !== lastAnnouncementRender){
+      lastAnnouncementRender = newHash;
+      renderAnnouncements();
+      renderFeed();
+    }
   }catch(err){ console.log('Announcement fetch error:',err); }
 }
 
 function startAnnouncementSync(){
   if(!syncMode) return;
   fetchAnnouncements();
-  announcementPollTimer = setInterval(fetchAnnouncements, 60000);
+  // Poll every 90 seconds - announcements rarely change
+  announcementPollTimer = setInterval(fetchAnnouncements, 90000);
 }
 
 function renderAnnouncements(){
@@ -535,7 +545,8 @@ async function fetchReports(){
 
 function startSync(){
   fetchReports();
-  reportsPollTimer = setInterval(fetchReports, 30000);
+  // Poll every 45 seconds - balances freshness with read costs
+  reportsPollTimer = setInterval(fetchReports, 45000);
 }
 let layoutPending = false;
 function afterChange(){ 
@@ -914,13 +925,21 @@ function renderStats(){
   // Reports persist indefinitely
   $('#statNext').textContent='—';
 }
-setInterval(()=>{ const before=reports.length;
+// Cache last known state to avoid redundant renders
+let lastExpiryCheckState = null;
+
+setInterval(()=>{ 
+  const before=reports.length;
   // Reports no longer expire
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
-  if(reports.length !== before || syncMode) {
+  
+  // Only refresh if report count actually changed
+  const newState = reports.length + '|' + reports.map(r=>r.id+r.ts).join(',');
+  if(newState !== lastExpiryCheckState){
+    lastExpiryCheckState = newState;
     refreshLayers(); renderFeed(); renderStats();
   }
-},30000);
+},45000);
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
