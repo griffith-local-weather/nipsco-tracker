@@ -435,7 +435,6 @@ const FIREBASE_CONFIG = {
 if (!firebase.apps.length) {
   firebase.initializeApp(FIREBASE_CONFIG);
 }
-const db = firebase.firestore();
 const auth = firebase.auth();
 
 // SECURITY: Only this email can broadcast messages
