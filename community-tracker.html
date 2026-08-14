@@ -117,8 +117,9 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #hint .hBtn:active{transform:translate(1px,1px)}
 #hint .geo{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
 
-#panel{position:absolute;top:12px;left:12px;bottom:38px;width:352px;z-index:1000;display:flex;flex-direction:column;
+#panel{position:absolute;top:12px;left:12px;bottom:38px;width:320px;z-index:1000;display:flex;flex-direction:column;
   background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shadow);overflow:hidden}
+@media(min-width:768px){#panel{width:300px}}
 #grab{display:none;width:30px;height:3px;background:var(--line2);margin:8px auto 0}
 .pHead{padding:14px 14px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
 .statRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -235,9 +236,9 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .toast.ok{border-color:var(--ok);color:var(--ok)}
 
 @media (max-width:768px){
-  #panel{left:0;right:0;top:auto;bottom:var(--safeB);width:100%;max-height:60vh;display:none}
+  #panel{left:0;right:0;top:auto;bottom:var(--safeB);width:100%;max-height:65vh;display:none;border-radius:16px 16px 0 0}
   #panel.open{display:flex}
-  #grab{display:block}
+  #grab{display:block;margin:10px auto}
   .brand h1{font-size:14px}
   .countBox{padding:4px 10px;min-width:70px}
   .countBox b{font-size:16px}
@@ -245,6 +246,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   #themeBtn{width:48px}
   #legend{right:8px;bottom:80px;width:180px;padding:10px}
   #statusBar{bottom:0;font-size:9px}
+  .modeBtn{padding:4px 10px;font-size:9px}
 }
 </style>
 </head>
@@ -949,20 +951,34 @@ els.modeBtns.forEach(btn => {
 let panelStartY = 0;
 let panelOpen = false;
 
-document.getElementById('grab')?.addEventListener('touchstart', (e) => {
-  panelStartY = e.touches[0].clientY;
-});
+const grabHandle = document.getElementById('grab');
+if (grabHandle) {
+  grabHandle.addEventListener('touchstart', (e) => {
+    panelStartY = e.touches[0].clientY;
+  }, { passive: true });
 
-document.getElementById('grab')?.addEventListener('touchmove', (e) => {
-  const deltaY = panelStartY - e.touches[0].clientY;
-  if (deltaY > 50) {
-    els.panel.classList.add('open');
-    panelOpen = true;
-  } else if (deltaY < -50) {
-    els.panel.classList.remove('open');
-    panelOpen = false;
-  }
-});
+  grabHandle.addEventListener('touchmove', (e) => {
+    const deltaY = panelStartY - e.touches[0].clientY;
+    if (deltaY > 50) {
+      els.panel.classList.add('open');
+      panelOpen = true;
+    } else if (deltaY < -50) {
+      els.panel.classList.remove('open');
+      panelOpen = false;
+    }
+  }, { passive: true });
+  
+  // Also support click/tap to toggle
+  grabHandle.addEventListener('click', () => {
+    els.panel.classList.toggle('open');
+    panelOpen = !panelOpen;
+  });
+}
+
+// Prevent map scrolling when interacting with panel on mobile
+els.panel.addEventListener('touchmove', (e) => {
+  e.stopPropagation();
+}, { passive: true });
 
 // Handle URL parameters (for shared links)
 const urlParams = new URLSearchParams(window.location.search);
