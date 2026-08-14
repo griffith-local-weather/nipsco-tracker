@@ -1,13 +1,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only allow reads/writes to announcements if the user is logged in
-    // AND their email matches the specific admin email exactly.
-    // This check happens on the server, so it cannot be bypassed by client-side hacks.
-    match /announcements/{announcementId} {
-      allow read: if true; // Anyone can see messages
-      allow write: if request.auth != null 
-                   && request.auth.token.email == 'primegamer2008@outlook.com';
+    // Helper functions for reports validation
+    function immutableOK(n, o) {
+      return n.lat == o.lat && n.lng == o.lng && n.status == o.status
+        && n.note == o.note && n.deviceId == o.deviceId;
+    }
+    function isValidCreate(d) {
+      return d.keys().size() == 9
+        && d.lat is number && d.lat >= 39.9 && d.lat <= 42.1
+        && d.lng is number && d.lng >= -88.4 && d.lng <= -84.4
+        && d.status in ['moving','parked','working','storm','other']
+        && d.note is string && d.note.size() <= 120
+        && d.deviceId is string && d.deviceId.size() <= 32
+        && d.ts is int
+        && d.ts <= request.time.toMillis() + 60000
+        && d.ts >= request.time.toMillis() - 120000
+        && d.ups == 0 && d.downs == 0
+        && d.voters is list && d.voters.size() == 0;
+    }
+    function isValidUpdate(n, o) {
+      return n.keys().size() == 9
+        && immutableOK(n, o)
+        && math.abs(n.ups - o.ups) <= 1
+        && math.abs(n.downs - o.downs) <= 1
+        && n.voters.size() <= o.voters.size() + 1
+        && n.ts >= o.ts
+        && n.ts <= request.time.toMillis() + 60000;
+    }
+    
+    // Reports collection rules
+    match /reports/{docId} {
+      allow read: if true;
+      allow create: if isValidCreate(request.resource.data);
+      allow update: if isValidUpdate(request.resource.data, resource.data);
+      allow delete: if false;
+    }
+    
+    // Announcements collection rules (Messaging Service)
+    match /announcements/{docId} {
+      // Anyone can read announcements
+      allow read: if true;
+      
+      // Only YOU can write/delete announcements
+      // Must be authenticated AND email must match exactly
+      allow write, delete: if request.auth != null 
+                           && request.auth.token.email == 'primegamer2008@outlook.com';
     }
   }
 }
