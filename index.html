@@ -981,12 +981,34 @@ submitBtn.addEventListener('click',async()=>{
 window.broadcastMessage = broadcastMessage;
 
 function renderFeed(){
-  const list=[...reports].sort((a,b)=> (isFlagged(a)-isFlagged(b)) || (b.ts-a.ts));
+  const now=Date.now();
+  // Get active announcements
+  const activeAnnouncements=announcements.filter(a=>{
+    const expires=a.expires||0;
+    return !a.hidden && (expires===0 || now<expires);
+  });
+  
+  // Combine announcements and reports, sort by timestamp
+  const combined=[...activeAnnouncements.map(a=>({...a,_type:'announcement'})), ...reports];
+  const list=combined.sort((a,b)=> (a._type==='announcement'?0:1) || (b.ts-a.ts));
+  
   $('#feedCount').textContent=list.length?list.length+' ACTIVE':'';
   if(!list.length){ $('#feed').innerHTML='<div class="empty"><div class="eGlyph">⌖</div><b>NO ACTIVE SIGHTINGS</b>'
     +'<p>REPORTS EXPIRE WITHIN ABOUT AN HOUR.<br>HIT REPORT TRUCK TO LOG THE FIRST ONE.</p></div>'; return; }
-  const now=Date.now();
+  
   $('#feed').innerHTML=list.map(r=>{
+    // Check if this is an announcement
+    if(r._type==='announcement'){
+      const style=r.style||'normal';
+      const bg=style==='urgent'?'var(--hot)':'var(--accent)';
+      const color=style==='urgent'?'#fff':'var(--accentInk)';
+      return '<div class="feedItem" style="border-left:4px solid '+bg+';background:'+bg+'22">'+
+        '<div class="fTop"><b>📢 ANNOUNCEMENT</b><time>'+ago(r.ts)+'</time></div>'+
+        '<div class="fLoc" style="color:'+color+';font-weight:500">'+esc(r.message||'')+'</div>'+
+        '</div>';
+    }
+    
+    // Regular report rendering
     const st=STATUSES.find(s=>s.k===r.status)||STATUSES[4];
     const remMs=ttlOf(r)-(now-r.ts), mins=Math.max(0,Math.ceil(remMs/60000));
     const flg=isFlagged(r), boost=(r.ups||0)>=2&&!flg;
