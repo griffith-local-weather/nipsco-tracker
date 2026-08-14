@@ -450,19 +450,21 @@ auth.onAuthStateChanged((user) => {
   const userDisplay = document.getElementById('adminUserDisplay');
 
   if (user) {
-    if (user.email === ADMIN_EMAIL) {
+    // Validate email format and check admin status
+    const isValidEmail = typeof user.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email);
+    if (isValidEmail && user.email === ADMIN_EMAIL) {
       // Authorized admin
       loginSection.classList.add('hidden');
       messageForm.classList.remove('hidden');
-      userDisplay.textContent = `✓ Logged in as ${user.email}`;
+      userDisplay.textContent = `✓ Logged in as ${esc(user.email)}`;
       signInBtn.textContent = "Sign Out";
       signInBtn.onclick = () => auth.signOut();
       errorMsg.style.display = 'none';
     } else {
-      // Wrong user
+      // Wrong user or invalid email
       loginSection.classList.remove('hidden');
       messageForm.classList.add('hidden');
-      errorMsg.textContent = `Access denied: ${user.email} is not an administrator.`;
+      errorMsg.textContent = `Access denied: ${(isValidEmail ? esc(user.email) : 'Invalid user')} is not an administrator.`;
       errorMsg.style.display = 'block';
       signInBtn.textContent = "Sign Out";
       signInBtn.onclick = () => auth.signOut();
@@ -482,7 +484,8 @@ function handleAdminSignIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch((error) => {
     console.error("Admin login failed", error);
-    document.getElementById('adminLoginError').textContent = "Login failed: " + error.message;
+    const safeMsg = typeof error.message === 'string' ? esc(error.message.slice(0,200)) : 'Unknown error';
+    document.getElementById('adminLoginError').textContent = "Login failed: " + safeMsg;
     document.getElementById('adminLoginError').style.display = 'block';
   });
 }
@@ -512,7 +515,7 @@ const ttlOf = r => (TTL_MIN[r.status]||45)*60000;
 function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
 
 let deviceId = LS.raw(K_DEV);
-if(!deviceId){ deviceId=Math.random().toString(36).slice(2,12); LS.rawSet(K_DEV, deviceId); }
+if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toString(36).slice(2,12); LS.rawSet(K_DEV, deviceId); }
 
 /* ================= Firebase ================= */
 let db=null, syncMode=false, reports=[], announcements=[];
@@ -534,6 +537,7 @@ function startAnnouncementSync(){
       // Sort client-side by timestamp
       announcements.sort((a,b) => (b.ts||0) - (a.ts||0));
       renderAnnouncements();
+      renderFeed();
     }, err=>{ console.log('Announcement sync error:',err); });
 }
 
@@ -543,26 +547,31 @@ function renderAnnouncements(){
     const expires=a.expires||0;
     return !a.hidden && (expires===0 || now<expires);
   });
-  if(active.length===0){ $('#announcementBar').classList.add('hidden'); return; }
-  const msg=active[0];
-  $('#announcementText').textContent=msg.message||'';
-  $('#announcementBar').classList.remove('hidden');
-  if(msg.style==='urgent'){
-    $('#announcementBar').style.background='var(--hot)';
-    $('#announcementText').style.color='#fff';
-  }else{
-    $('#announcementBar').style.background='var(--accent)';
-    $('#announcementText').style.color='var(--accentInk)';
+  if(active.length===0){ $('#announcementBar').classList.add('hidden'); }
+  else{
+    const msg=active[0];
+    $('#announcementText').textContent=msg.message||'';
+    $('#announcementBar').classList.remove('hidden');
+    if(msg.style==='urgent'){
+      $('#announcementBar').style.background='var(--hot)';
+      $('#announcementText').style.color='#fff';
+    }else{
+      $('#announcementBar').style.background='var(--accent)';
+      $('#announcementText').style.color='var(--accentInk)';
+    }
   }
 }
 
 function broadcastMessage(message, style='normal', durationMin=60){
   if(!syncMode){ toast('LOCAL MODE - CANNOT BROADCAST','warn'); return Promise.reject('local'); }
+  const safeMsg = esc(String(message||'').slice(0,500));
+  const safeStyle = ['urgent','normal'].includes(style) ? style : 'normal';
+  const safeDur = Math.min(Math.max(parseInt(durationMin)||60, 5), 1440);
   const ann={
-    message:message,
-    style:style,
+    message:safeMsg,
+    style:safeStyle,
     ts:Date.now(),
-    expires: durationMin>0 ? Date.now()+durationMin*60000 : 0,
+    expires: safeDur>0 ? Date.now()+safeDur*60000 : 0,
     active:true,
     hidden:false
   };
@@ -880,8 +889,8 @@ function layoutBottomSoon(){ requestAnimationFrame(layoutBottom); setTimeout(lay
 addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; layoutBottomSoon(); });
 
 function buildStatusGrid(){
-  statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+s.k+'">'
-    +'<span class="d" style="background:'+s.c+'"></span>'+s.label+'<small>~'+TTL_MIN[s.k]+'m</small></button>').join('');
+  statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
+    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small>~'+esc(TTL_MIN[s.k])+'m</small></button>').join('');
   statusGrid.querySelectorAll('.stChip').forEach(b=>b.addEventListener('click',()=>{
     selStatus=b.dataset.k; buzz(8);
     statusGrid.querySelectorAll('.stChip').forEach(x=>x.classList.toggle('sel',x===b));
@@ -956,8 +965,9 @@ submitBtn.addEventListener('click',async()=>{
   if(rem>0)return toast('COOLDOWN — WAIT '+rem+'S','warn');
   if(capReached())return toast('HOURLY REPORT LIMIT REACHED','warn');
   if(!pendingLoc)return toast('NO LOCATION SELECTED','warn');
+  const safeNote = esc(noteIn.value.trim().slice(0,120));
   const rep={ lat:pendingLoc.lat, lng:pendingLoc.lng, status:selStatus,
-    note:noteIn.value.trim().slice(0,120), ts:Date.now(), deviceId:deviceId,
+    note:safeNote, ts:Date.now(), deviceId:deviceId,
     ups:0, downs:0, voters:[] };
   LS.rawSet(K_LAST,String(rep.ts));
   const times=LS.get(K_TIMES,[]).filter(t=>Date.now()-t<36e5); times.push(rep.ts); LS.set(K_TIMES,times);
