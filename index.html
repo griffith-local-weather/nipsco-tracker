@@ -32,7 +32,7 @@
 html[data-theme="light"]{
   --bg:#d9d6ce; --panel:#f1efe9; --panel2:#e6e3db; --line:#b5b0a3; --line2:#7d776a;
   --text:#191b1d; --muted:#5c6167;
-  --accent:#ffb000; --accentTxt:#7a5200; --accentInk:#151006;
+  --accent:#ffb000; --accentTxt:#7a5200; --accentInk:#fff;
   --hot:#bd2b31; --ok:#2c7a42; --blue:#2f6ea8;
   --mapBg:#cfccc4;
   --shadow:3px 3px 0 rgba(0,0,0,.13); --shadowSm:2px 2px 0 rgba(0,0,0,.13);
@@ -550,7 +550,7 @@ function renderAnnouncements(){
   if(active.length===0){ $('#announcementBar').classList.add('hidden'); }
   else{
     const msg=active[0];
-    $('#announcementText').textContent=msg.message||'';
+    $('#announcementText').innerText=msg.message||'';
     $('#announcementBar').classList.remove('hidden');
     if(msg.style==='urgent'){
       $('#announcementBar').style.background='var(--hot)';
@@ -564,7 +564,7 @@ function renderAnnouncements(){
 
 function broadcastMessage(message, style='normal', durationMin=60){
   if(!syncMode){ toast('LOCAL MODE - CANNOT BROADCAST','warn'); return Promise.reject('local'); }
-  const safeMsg = esc(String(message||'').slice(0,500));
+  const safeMsg = String(message||'').slice(0,500);
   const safeStyle = ['urgent','normal'].includes(style) ? style : 'normal';
   const safeDur = Math.min(Math.max(parseInt(durationMin)||60, 5), 1440);
   const ann={
