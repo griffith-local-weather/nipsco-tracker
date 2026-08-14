@@ -113,8 +113,9 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #hint .hBtn:active{transform:translate(1px,1px)}
 #hint .geo{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
 
-#panel{position:absolute;top:12px;left:12px;bottom:38px;width:352px;z-index:1000;display:flex;flex-direction:column;
+#panel{position:absolute;top:12px;left:12px;bottom:38px;width:320px;z-index:1000;display:flex;flex-direction:column;
   background:var(--panel);border:1px solid var(--line2);box-shadow:var(--shadow);overflow:hidden}
+@media(min-width:768px){#panel{width:300px}}
 #grab{display:none;width:30px;height:3px;background:var(--line2);margin:8px auto 0}
 .pHead{padding:14px 14px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
 .statRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
