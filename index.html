@@ -705,7 +705,7 @@ const isFlagged = r => (r.downs||0) >= 3;
 function heatPoints(){
   const now=Date.now();
   // Exclude 'other' and 'none' from heatmap
-  return reports.filter(r=>!isFlagged(r) && r.category && r.category.toLowerCase() !== 'other' && r.category.toLowerCase() !== 'none').map(r=>{
+  return reports.filter(r=>!isFlagged(r) && r.status && r.status.toLowerCase() !== 'other' && r.status.toLowerCase() !== 'none').map(r=>{
     const rem=Math.max(0, 1-(now-r.ts)/ttlOf(r));
     let w=0.2+0.8*rem;
     if((r.ups||0)>=2) w=Math.min(1.25, w+0.3);
@@ -732,7 +732,7 @@ function rebuildBubbles(){
   const pointReports = [];
   
   reports.filter(r=>!isFlagged(r)).forEach(r=>{
-    const cat = (r.category||'').toLowerCase();
+    const cat = (r.status||'').toLowerCase();
     if(cat === 'other' || cat === 'none'){
       pointReports.push(r);
     } else {
@@ -749,10 +749,11 @@ function rebuildBubbles(){
     const rCircle=L.circle([lat,lng],{ radius:120+Math.min(800,Math.sqrt(arr.length)*180),
       color:hot?'#ffc72e':'#ffb000', weight:hot?1.8:1.2, opacity:0.55, dashArray:hot?null:'4 4',
       fillColor:'#ff8a3d', fillOpacity:0.22, interactive:true }).addTo(bubbleLayer);
-    // Click to show first report in bubble
+    // Click to show first report in bubble and pan to location
     rCircle.on('click',()=>{
       const rep=arr[0];
       if(rep){
+        map.flyTo([rep.lat, rep.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
         const st=STATUSES.find(s=>s.k===rep.status)||STATUSES[4];
         const noteText=rep.note?(' — '+esc(rep.note)):'';
         toast(st.label+noteText,'');
@@ -766,6 +767,7 @@ function rebuildBubbles(){
       color:'#fff', weight:2, opacity:0.9,
       fillColor:'#6c757d', fillOpacity:0.9, interactive:true }).addTo(pointLayer);
     pMarker.on('click',()=>{
+      map.flyTo([r.lat, r.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
       const st=STATUSES.find(s=>s.k===r.status)||STATUSES[4];
       const noteText=r.note?(' — '+esc(r.note)):'';
       toast(st.label+noteText,'');
