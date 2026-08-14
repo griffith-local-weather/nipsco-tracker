@@ -248,7 +248,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   #hint{top:14px;font-size:11px;padding:10px;gap:8px;flex-wrap:wrap;justify-content:center}
   #hint .hBtn{padding:12px 14px;font-size:11px}
   #legend{display:none}
-  .layers{top:auto;bottom:calc(var(--sheetH,170px) + 12px);right:auto;left:10px;flex-direction:row;
+  .layers{top:auto;bottom:calc(var(--sheetH,170px) + 72px);right:auto;left:10px;flex-direction:row;
     max-width:calc(100vw - 20px);overflow-x:auto;gap:6px;padding-bottom:2px}
   .layerBtn{padding:12px 13px;font-size:10.5px;flex:0 0 auto;min-height:44px}
   #panel{top:auto;left:0;right:0;bottom:0;width:auto;border-left:none;border-right:none;border-bottom:none;
@@ -258,7 +258,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   .pHead:active{cursor:grabbing}
   .statRow{margin-top:8px}
   #reportBtn{min-height:54px}
-  #radarBar{left:10px;right:10px;transform:none;bottom:calc(var(--sheetH,170px) + 12px);
+  #radarBar{left:10px;right:10px;transform:none;bottom:12px;
     justify-content:center;padding:10px;max-width:none}
   #radarPlay{width:44px;height:44px;font-size:13px}
   #radarScrub{flex:1;width:auto;min-width:60px;height:32px}
@@ -452,7 +452,9 @@ auth.onAuthStateChanged((user) => {
   if (user) {
     // Validate email format and check admin status
     const isValidEmail = typeof user.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email);
-    if (isValidEmail && user.email === ADMIN_EMAIL) {
+    const isAdmin = isValidEmail && user.email === ADMIN_EMAIL;
+    window.isAdmin = isAdmin; // Expose for delete button logic
+    if (isAdmin) {
       // Authorized admin
       loginSection.classList.add('hidden');
       messageForm.classList.remove('hidden');
@@ -471,6 +473,7 @@ auth.onAuthStateChanged((user) => {
     }
   } else {
     // Not logged in
+    window.isAdmin = false;
     loginSection.classList.remove('hidden');
     messageForm.classList.add('hidden');
     errorMsg.style.display = 'none';
@@ -707,7 +710,7 @@ function heatPoints(){
 function rebuildHeat(){
   if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
   if(showHeat){ heatLayer = L.heatLayer(heatPoints(),{
-      radius:36, blur:30, minOpacity:0.22, max:2.4,
+      radius:36, blur:30, minOpacity:0.55, max:2.4,
       gradient:{0.15:'#4c0d0d',0.35:'#b91c1c',0.55:'#ef4444',0.72:'#f97316',0.87:'#fbbf24',1:'#fef08a'}
     }).addTo(map); }
 }
@@ -720,9 +723,18 @@ function rebuildBubbles(){
   Object.values(cells).forEach(arr=>{
     const lat=arr.reduce((s,r)=>s+r.lat,0)/arr.length, lng=arr.reduce((s,r)=>s+r.lng,0)/arr.length;
     const hot=arr.some(r=>(r.ups||0)>=2);
-    L.circle([lat,lng],{ radius:350+Math.min(2600,Math.sqrt(arr.length)*520),
+    const rCircle=L.circle([lat,lng],{ radius:180+Math.min(1400,Math.sqrt(arr.length)*280),
       color:hot?'#ffc72e':'#ffb000', weight:hot?1.8:1.2, opacity:0.55, dashArray:hot?null:'4 4',
-      fillColor:'#ff8a3d', fillOpacity:0.10, interactive:false }).addTo(bubbleLayer);
+      fillColor:'#ff8a3d', fillOpacity:0.22, interactive:true }).addTo(bubbleLayer);
+    // Click to show first report in bubble
+    rCircle.on('click',()=>{
+      const rep=arr[0];
+      if(rep){
+        const st=STATUSES.find(s=>s.k===rep.status)||STATUSES[4];
+        const noteText=rep.note?(' — '+esc(rep.note)):'';
+        toast(st.label+noteText,'');
+      }
+    });
   });
   if(showBubbles) bubbleLayer.addTo(map);
 }
@@ -822,6 +834,18 @@ $('#feed').addEventListener('click',e=>{
   const id=item.dataset.id, act=btn.dataset.action;
   if(act==='up')voteReport(id,1); else if(act==='down')voteReport(id,-1);
   else if(act==='bump')bumpReport(id); else if(act==='share')shareReport(id);
+  else if(act==='delete'){
+    if(!window.isAdmin){ toast('ADMIN ACCESS REQUIRED','warn'); return; }
+    if(!confirm('Delete this report permanently?'))return;
+    if(syncMode){
+      db.collection('reports').doc(id).delete()
+        .then(()=>toast('REPORT DELETED','ok'))
+        .catch(()=>toast('DELETE FAILED','warn'));
+    }else{
+      const idx=reports.findIndex(r=>r.id===id);
+      if(idx>=0){ reports.splice(idx,1); LS.set(K_REP,reports); afterChange(); toast('REPORT DELETED','ok'); }
+    }
+  }
 });
 
 /* ================= report flow ================= */
@@ -999,7 +1023,7 @@ function renderFeed(){
     return !a.hidden && (expires===0 || now<expires);
   });
   
-  // Combine announcements and reports, sort by timestamp
+  // Combine announcements and reports, sort by timestamp DESCENDING (newest first)
   const combined=[...activeAnnouncements.map(a=>({...a,_type:'announcement'})), ...reports];
   const list=combined.sort((a,b)=> (a._type==='announcement'?0:1) || (b.ts-a.ts));
   
@@ -1031,7 +1055,7 @@ function renderFeed(){
         '<button class="vBtn up" data-action="up" title="Confirm sighting">▲ '+(r.ups||0)+'</button>'
         +'<button class="vBtn down" data-action="down" title="Wrong / spam">▼ '+(r.downs||0)+'</button>'
         +'<button class="vBtn" data-action="bump" title="Still here — refresh timer">⟳ STILL HERE</button>'
-        +'<button class="vBtn share" data-action="share" title="Copy link">⤴</button>')
+        +'<button class="vBtn share" data-action="share" title="Copy link">⤴</button><button class="vBtn" data-action="delete" title="Delete report (admin only)" style="margin-left:auto;color:var(--hot);border-color:var(--hot)">🗑</button>')
       +'</div>'+(r.note?'<p class="fNote">'+esc(r.note)+'</p>':'')+'</div>';
   }).join('');
 }
@@ -1063,6 +1087,37 @@ tickCooldown(); initRadar();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
 layoutBottomSoon();
+
+// Onboarding for first-time users
+const hasSeenOnboarding=LS.raw('seenOnboarding');
+if(!hasSeenOnboarding){
+  setTimeout(()=>{
+    const modal=$('#modal');
+    modal.classList.remove('hidden');
+    modal.querySelector('.modalCard').innerHTML=
+      '<button id="modalClose" aria-label="Close">✕</button>'+
+      '<h3><span class="tick"></span>Welcome!</h3>'+
+      '<p style="margin:16px 0;line-height:1.7;color:var(--text)">This is a community truck tracker for NIPSCO service areas in Northern Indiana.</p>'+
+      '<div style="background:var(--panel2);padding:14px;border:1px solid var(--line);margin:14px 0">'+
+        '<b style="display:block;margin-bottom:8px;font-size:13px;color:var(--accentTxt)">How it works:</b>'+
+        '<ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px;color:var(--muted)">'+
+          '<li>TAP <b style="color:var(--text)">REPORT TRUCK</b> to log a sighting</li>'+
+          '<li>Use <b style="color:var(--text)">HEAT</b> to see density hotspots</li>'+
+          '<li>Toggle <b style="color:var(--text)">BUBBLES</b> for cluster view — click bubbles to see details</li>'+
+          '<li>Reports auto-expire in ~1 hour</li>'+
+          '<li>▲ confirms, ▼ flags wrong reports</li>'+
+        '</ul>'+
+      '</div>'+
+      '<button id="gotItBtn" style="width:100%;border:2px solid var(--accent);padding:15px;font-weight:600;font-size:15px;letter-spacing:.2em;color:var(--accentInk);background:var(--accent);text-transform:uppercase;margin-top:8px">GOT IT</button>';
+    document.getElementById('gotItBtn').onclick=()=>{
+      LS.rawSet('seenOnboarding','1');
+      modal.classList.add('hidden');
+      // Restore original modal content
+      location.reload();
+    };
+  },1500);
+}
+
 setTimeout(()=>{ $('#boot').classList.add('done');
   if(syncMode) toast('CONNECTED TO LIVE DATABASE','ok'); },750);
 </script>
