@@ -517,8 +517,8 @@ function handleAdminSignIn() {
 /* ================= config & helpers ================= */
 const COOLDOWN_SEC = 60, HOURLY_CAP = 8;
 const K_REP='ntt4_reports', K_LAST='ntt4_last', K_TIMES='ntt4_times', K_DEV='ntt4_devid', K_THEME='ntt4_theme';
-const TTL_MIN = { moving:30, other:40, parked:45, working:60, storm:90 };
-const MAX_SYNC_MS = 1*36e5; // Reduced from 2 hours to 1 hour to cut Firebase reads
+const TTL_MIN = { moving:60, other:80, parked:90, working:120, storm:180 };
+const MAX_SYNC_MS = 45*60*1000; // Reduced to 45 minutes to cut Firebase reads (matches poll interval)
 const $ = s => document.querySelector(s);
 const LS = {
   get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
@@ -551,26 +551,33 @@ function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.
 paintSyncBadge();
 
 /* ================= Announcements ================= */
-// Poll every 60 seconds instead of real-time listener - saves 95%+ reads
+// Cache to avoid redundant renders
+let lastAnnouncementRender = null;
+
 async function fetchAnnouncements(){
   if(!syncMode) return;
   try{
-    // Get all announcements, filter client-side to avoid index issues
     const snap = await db.collection('announcements')
       .orderBy('ts', 'desc')
       .get();
     announcements=[];
     snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
-    renderAnnouncements();
-    renderFeed();
+    
+    // Only re-render if announcements actually changed
+    const newHash = announcements.map(a=>a.id+a.ts).join('|');
+    if(newHash !== lastAnnouncementRender){
+      lastAnnouncementRender = newHash;
+      renderAnnouncements();
+      renderFeed();
+    }
   }catch(err){ console.log('Announcement fetch error:',err); }
 }
 
 function startAnnouncementSync(){
   if(!syncMode) return;
   fetchAnnouncements();
-  // Poll every 60 seconds
-  announcementPollTimer = setInterval(fetchAnnouncements, 60000);
+  // Poll every 90 seconds (reduced from 60s) - announcements rarely change
+  announcementPollTimer = setInterval(fetchAnnouncements, 90000);
 }
 
 function renderAnnouncements(){
@@ -649,36 +656,42 @@ function broadcastMessage(message, style='normal', durationMin=60){
 const urlSpot = new URLSearchParams(location.search).get('spot');
 let pendingSpot = urlSpot || null;
 
-// Poll every 30 seconds instead of real-time listener - saves 95%+ reads
+// Poll every 45 seconds instead of real-time listener - saves 95%+ reads
+// Cache to avoid redundant renders when data hasn't changed
+let lastReportsHash = null;
 async function fetchReports(){
   if(!syncMode) return;
   try{
-    // Query all recent reports, then filter client-side
-    // This avoids complex composite indexes while still being efficient
     const snap = await db.collection('reports')
       .orderBy('ts', 'desc')
       .get();
     reports=[];
     const now = Date.now();
-    snap.forEach(d=>{ 
-      const r=d.data(); 
+    snap.forEach(d=>{
+      const r=d.data();
       r.id=d.id;
       // Only keep reports within time window AND not expired
       if(r.ts > now-MAX_SYNC_MS && (now-r.ts < ttlOf(r))){
-        r.ups=r.ups||0; 
-        r.downs=r.downs||0; 
-        r.voters=r.voters||[]; 
+        r.ups=r.ups||0;
+        r.downs=r.downs||0;
+        r.voters=r.voters||[];
         reports.push(r);
       }
     });
-    afterChange();
+    
+    // Only trigger updates if reports actually changed
+    const newHash = reports.map(r=>r.id+r.ts+(r.ups||0)+(r.downs||0)).join('|');
+    if(newHash !== lastReportsHash){
+      lastReportsHash = newHash;
+      afterChange();
+    }
   }catch(err){ syncTag.textContent='OFFLINE'; toast('LIVE SYNC ERROR — CHECK FIRESTORE RULES','warn'); }
 }
 
 function startSync(){
   fetchReports();
-  // Poll every 30 seconds (you said only ~5 reports active at once)
-  reportsPollTimer = setInterval(fetchReports, 30000);
+  // Poll every 45 seconds (reduced from 30s) - balances freshness with read costs
+  reportsPollTimer = setInterval(fetchReports, 45000);
 }
 let layoutPending = false;
 function afterChange(){ 
@@ -1150,6 +1163,9 @@ submitBtn.addEventListener('click',async()=>{
 /* Admin: Broadcast message to all users (call from browser console) */
 window.broadcastMessage = broadcastMessage;
 
+// Cache last rendered feed HTML to avoid redundant DOM operations
+let lastFeedHtml = null;
+
 function renderFeed(){
   const now=Date.now();
   // Get active announcements
@@ -1166,7 +1182,12 @@ function renderFeed(){
     return b.ts-a.ts; // descending: newest first
   });
   
-  $('#feedCount').textContent=list.length?list.length+' ACTIVE':'';
+  // Generate feed hash for caching
+  const newFeedHash = list.map(x => x.id || x.ts).join('|') + '|' + list.length;
+  if(newFeedHash === lastFeedHtml) return; // Skip if nothing changed
+  lastFeedHtml = newFeedHash;
+
+  $('#feedCount').textContent = list.length ? list.length + ' ACTIVE' : '';
   if(!list.length){ $('#feed').innerHTML='<div class="empty"><div class="eGlyph">⌖</div><b>NO ACTIVE SIGHTINGS</b>'
     +'<p>REPORTS EXPIRE WITHIN ABOUT AN HOUR.<br>HIT REPORT TRUCK TO LOG THE FIRST ONE.</p></div>'; return; }
   
@@ -1208,14 +1229,21 @@ function renderStats(){
     $('#statNext').textContent=Math.max(0,Math.ceil(next/60000))+'m'; }
   else $('#statNext').textContent='—';
 }
-setInterval(()=>{ const before=reports.length;
+// Cache last known state to avoid redundant renders
+let lastExpiryCheckState = null;
+
+setInterval(()=>{ 
+  const before=reports.length;
   reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
-  // Only refresh if something changed to avoid unnecessary renders
-  if(reports.length !== before || syncMode) {
+  
+  // Only refresh if report count actually changed
+  const newState = reports.length + '|' + reports.map(r=>r.id+r.ts).join(',');
+  if(newState !== lastExpiryCheckState){
+    lastExpiryCheckState = newState;
     refreshLayers(); renderFeed(); renderStats();
   }
-},30000);
+},45000);
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
