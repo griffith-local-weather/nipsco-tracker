@@ -174,8 +174,11 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 #legend{position:absolute;right:12px;bottom:44px;z-index:910;background:var(--panel);border:1px solid var(--line2);
   padding:12px 14px;box-shadow:var(--shadowSm);width:204px}
 #legend h4{font-size:9px;font-weight:600;letter-spacing:.26em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
-.grad{height:8px;background:linear-gradient(90deg,#4c0d0d,#b91c1c,#ef4444,#f97316,#fbbf24,#fef08a)}
-.gradLbls{display:flex;justify-content:space-between;font:400 9px 'Space Mono';color:var(--muted);margin-top:4px}
+.legendRow{display:flex;align-items:center;gap:8px;margin-top:6px;font:400 9.5px 'Space Mono';color:var(--muted)}
+.houseIcon{width:14px;height:14px;display:inline-block}
+.houseIcon.off{background:#ef4444;clip-path:polygon(0% 100%,0% 45%,50% 0%,100% 45%,100% 100%,70% 100%,70% 65%,30% 65%,30% 100%)}
+.houseIcon.on{background:#42a85d;clip-path:polygon(0% 100%,0% 45%,50% 0%,100% 45%,100% 100%,70% 100%,70% 65%,30% 65%,30% 100%)}
+.houseIcon.unknown{background:#5c6167;clip-path:polygon(0% 100%,0% 45%,50% 0%,100% 45%,100% 100%,70% 100%,70% 65%,30% 65%,30% 100%)}
 #legend p{font:400 9.5px 'Space Mono';color:var(--muted);margin-top:8px;line-height:1.6;border-top:1px solid var(--line);padding-top:7px}
 
 #modal{position:absolute;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(8,10,12,.75)}
@@ -222,6 +225,9 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .pulseRing{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;background:rgba(255,176,0,.35)}
 .pulseRing::after{content:'';position:absolute;inset:-5px;border:2px solid var(--hot);animation:ring 1.1s ease-out infinite}
 @keyframes ring{0%{transform:scale(.4);opacity:1}100%{transform:scale(3.2);opacity:0}}
+
+.houseMarker{background:none;border:none}
+.houseMarker .houseIcon{display:block;width:18px;height:18px}
 
 .leaflet-control-attribution{background:var(--panel)!important;color:var(--muted)!important;font:400 9px 'Space Mono'!important;border:1px solid var(--line)!important}
 .leaflet-control-attribution a{color:var(--muted)!important}
@@ -309,6 +315,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   <div class="layers" id="layerStack">
     <button class="layerBtn active" id="heatToggle"><span class="sq"></span>Heat</button>
     <button class="layerBtn" id="bubbleToggle"><span class="sq"></span>Bubbles</button>
+    <button class="layerBtn" id="houseToggle"><span class="sq"></span>Houses</button>
     <button class="layerBtn" id="trafficToggle"><span class="sq"></span>Google Maps</button>
   </div>
 
@@ -324,7 +331,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
       <div class="statRow">
         <div class="mini"><b id="statTotal">0</b><span>REPORTS</span></div>
         <div class="mini"><b id="statOff">0</b><span>POWER OFF</span></div>
-        <div class="mini"><b id="statNext">—</b><span>EXPIRES</span></div>
+        <div class="mini"><b id="statNext">—</b><span>PERSISTENT</span></div>
       </div>
       <button id="reportBtn"><span>REPORT STATUS</span><span id="cdChip" class="hidden"></span></button>
     </div>
@@ -339,10 +346,11 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   </aside>
 
   <div id="legend" class="corners">
-    <h4>Outage density</h4>
-    <div class="grad"></div>
-    <div class="gradLbls"><span>LOW</span><span>HIGH</span></div>
-    <p>🟢 Power ON | 🔴 Power OFF | ⚪ Unknown. Locations fuzzed ±200m for privacy.</p>
+    <h4>Map Legend</h4>
+    <div class="legendRow"><span class="houseIcon off"></span> Reported: Power OFF</div>
+    <div class="legendRow"><span class="houseIcon on"></span> Reported: Power ON</div>
+    <div class="legendRow"><span class="houseIcon unknown"></span> No Report (Unknown)</div>
+    <p>🔴 Red = Outage | 🟢 Green = Power On | ⚪ Gray = Unknown. Locations fuzzed ±200m for privacy.</p>
   </div>
 
   <div id="statusBar">
@@ -416,7 +424,7 @@ auth.onAuthStateChanged((user) => {
 /* ================= config & helpers ================= */
 const COOLDOWN_SEC = 60, HOURLY_CAP = 8;
 const K_REP='pot_reports', K_LAST='pot_last', K_TIMES='pot_times', K_DEV='pot_devid', K_THEME='pot_theme';
-const TTL_MIN = { on:120, off:60, unknown:90 }; // ON lasts 2hrs, OFF 1hr, UNKNOWN 1.5hrs
+// Power outage reports persist indefinitely (no expiration)
 const MAX_SYNC_MS = 2*36e5;
 const $ = s => document.querySelector(s);
 const LS = {
@@ -427,7 +435,7 @@ const LS = {
 };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function ago(ts){ const s=(Date.now()-ts)/1e3; if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
-const ttlOf = r => (TTL_MIN[r.status]||60)*60000;
+// Reports no longer expire - ttlOf removed
 function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
 
 let deviceId = LS.raw(K_DEV);
@@ -514,7 +522,7 @@ async function fetchReports(){
     snap.forEach(d=>{ 
       const r=d.data(); 
       r.id=d.id;
-      if(r.ts > now-MAX_SYNC_MS && (now-r.ts < ttlOf(r))){
+      if(r.ts > now-MAX_SYNC_MS){
         r.ups=r.ups||0; 
         r.downs=r.downs||0; 
         r.voters=r.voters||[]; 
@@ -586,14 +594,41 @@ $('#themeBtn').addEventListener('click',()=>{
   darkTheme=!darkTheme; LS.rawSet(K_THEME, darkTheme?'dark':'light'); applyTheme();
 });
 
-let showHeat=true, showBubbles=false, heatLayer=null, bubbleLayer=null, pointLayer=null;
+let showHeat=true, showBubbles=false, showHouses=false, heatLayer=null, bubbleLayer=null, pointLayer=null, houseLayer=null;
 const isFlagged = r => (r.downs||0) >= 3;
+
+function houseIcon(status){
+  const cls = status === 'off' ? 'off' : (status === 'on' ? 'on' : 'unknown');
+  return L.divIcon({
+    className: 'houseMarker',
+    html: '<span class="houseIcon '+cls+'"></span>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+}
+
+function rebuildHouses(){
+  if(houseLayer){ map.removeLayer(houseLayer); houseLayer=null; }
+  if(!showHouses) return;
+  
+  houseLayer = L.layerGroup();
+  reports.filter(r=>!isFlagged(r)).forEach(r=>{
+    const m = L.marker([r.lat, r.lng], { icon: houseIcon(r.status), interactive: true, zIndexOffset: 600 }).addTo(houseLayer);
+    m.on('click', ()=>{
+      map.flyTo([r.lat, r.lng], Math.max(map.getZoom(), 15), { duration: 0.6 });
+      const st=STATUSES.find(s=>s.k===r.status)||STATUSES[2];
+      const noteText=r.note?(' — '+esc(r.note)):'';
+      toast(st.label+noteText,'');
+    });
+  });
+  houseLayer.addTo(map);
+}
 
 function heatPoints(){
   const now=Date.now();
   // Weight OFF reports higher in heatmap
   return reports.filter(r=>!isFlagged(r)).map(r=>{
-    const rem=Math.max(0, 1-(now-r.ts)/ttlOf(r));
+    const rem=1; // No expiration - full weight
     let w=0.2+0.8*rem;
     if(r.status==='off') w*=1.5; // Outages show hotter
     if((r.ups||0)>=2) w=Math.min(1.25, w+0.3);
@@ -602,6 +637,7 @@ function heatPoints(){
 }
 function rebuildHeat(){
   if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
+  if(houseLayer){ map.removeLayer(houseLayer); houseLayer=null; }
   if(showHeat){ heatLayer = L.heatLayer(heatPoints(),{
       radius:42, blur:28, minOpacity:0.75, max:3.2,
       gradient:{0.15:'#4c0d0d',0.35:'#b91c1c',0.55:'#ef4444',0.72:'#f97316',0.87:'#fbbf24',1:'#fef08a'}
@@ -638,7 +674,7 @@ function rebuildBubbles(){
   
   if(showBubbles) bubbleLayer.addTo(map);
 }
-function refreshLayers(){ rebuildHeat(); rebuildBubbles(); }
+function refreshLayers(){ rebuildHeat(); rebuildBubbles(); rebuildHouses(); }
 
 /* status strip */
 const cCoord=$('#cCoord'), cZoom=$('#cZoom'), cClock=$('#cClock');
@@ -763,17 +799,17 @@ addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; schedu
 
 function buildStatusGrid(){
   statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
-    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small>~'+esc(TTL_MIN[s.k])+'m</small></button>').join('');
+    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small></button>').join('');
   statusGrid.querySelectorAll('.stChip').forEach(b=>b.addEventListener('click',()=>{
     selStatus=b.dataset.k; buzz(8);
     statusGrid.querySelectorAll('.stChip').forEach(x=>x.classList.toggle('sel',x===b));
-    expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.'; }));
+    expireHint.textContent='REPORTS PERSIST INDEFINITELY.'; }));
 }
 function openModal(){
   locBox.innerHTML='≈ '+pendingLoc.lat.toFixed(3)+', '+pendingLoc.lng.toFixed(3)
     +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(FUZZED ±200M)</span>';
   locBox.classList.add('has'); buildStatusGrid();
-  expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.';
+  expireHint.textContent='REPORTS PERSIST INDEFINITELY.';
   modal.classList.remove('hidden'); tickCooldown();
 }
 function closeModal(){ modal.classList.add('hidden'); pendingLoc=null; noteIn.value=''; }
@@ -822,7 +858,7 @@ submitBtn.addEventListener('click',async()=>{
     catch(e){ submitBtn.disabled=false; submitBtn.textContent='SUBMIT REPORT';
       toast('COULD NOT REACH DATABASE','warn'); return; }
     closeModal(); pulse(rep);
-    toast('REPORT SUBMITTED — EXPIRES IN ~'+TTL_MIN[rep.status]+' MIN','ok');
+    toast('REPORT SUBMITTED — ADDED TO MAP','ok');
   }else{
     rep.id=Date.now().toString(36); reports.push(rep); LS.set(K_REP,reports);
     afterChange(); closeModal(); pulse(rep); toast('REPORT LOGGED (LOCAL MODE)','ok');
@@ -859,12 +895,12 @@ function renderFeed(){
     }
     
     const st=STATUSES.find(s=>s.k===r.status)||STATUSES[2];
-    const remMs=ttlOf(r)-(now-r.ts), mins=Math.max(0,Math.ceil(remMs/60000));
+    // No expiration
     const flg=isFlagged(r), boost=(r.ups||0)>=2&&!flg;
     return '<div class="feedItem'+(flg?' flagged':'')+(boost?' boosted':'')+'" data-id="'+esc(r.id)+'" style="border-left-color:'+st.c+'">'
       +'<div class="fTop"><b>'+st.label+'</b><time>'+ago(r.ts)+'</time></div>'
       +'<div class="fLoc">'+esc(nearestCity(r.lat,r.lng))+'</div>'
-      +'<div class="fMeta"><span class="exp'+(mins<10?' warn':'')+'">⏳ '+mins+'M</span>'
+      +'<div class="fMeta"><span class="exp'+(mins<10?' warn':'')+'"><span>PERSISTENT</span>'
       +(flg?'<span class="flagTag">HIDDEN</span>':
         '<button class="vBtn up" data-action="up" title="Confirm">▲ '+(r.ups||0)+'</button>'
         +'<button class="vBtn down" data-action="down" title="Wrong info">▼ '+(r.downs||0)+'</button>'
@@ -878,12 +914,11 @@ function renderStats(){
   $('#statLive').textContent=active.length; $('#statTotal').textContent=active.length;
   const offCount=active.filter(r=>r.status==='off').length;
   $('#statOff').textContent=offCount; $('#statHotTop').textContent=offCount;
-  if(active.length){ const next=Math.min(...active.map(r=>ttlOf(r)-(Date.now()-r.ts)));
-    $('#statNext').textContent=Math.max(0,Math.ceil(next/60000))+'m'; }
-  else $('#statNext').textContent='—';
+  // Reports persist indefinitely
+  $('#statNext').textContent='—';
 }
 setInterval(()=>{ const before=reports.length;
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
+  // Reports no longer expire
   if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
   if(reports.length !== before || syncMode) {
     refreshLayers(); renderFeed(); renderStats();
@@ -892,6 +927,7 @@ setInterval(()=>{ const before=reports.length;
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
+$('#houseToggle').addEventListener('click',()=>{ showHouses=!showHouses; $('#houseToggle').classList.toggle('active',showHouses); rebuildHouses(); });
 let trafficOn = false;
 const trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20, attribution:'© Google' });
 $('#trafficToggle').addEventListener('click',()=>{ 
@@ -906,7 +942,8 @@ applyTheme();
 if(syncMode){ startSync(); startAnnouncementSync(); }
 else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
   reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }
+  reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
+  afterChange(); }
 tickCooldown();
 updZoom();
 if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
