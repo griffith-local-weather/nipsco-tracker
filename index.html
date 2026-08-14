@@ -147,6 +147,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   font:700 10px 'Space Mono';display:flex;align-items:center;gap:5px;transition:.12s;min-height:24px}
 .vBtn:hover{color:var(--text)}
 .vBtn:active{transform:translate(1px,1px)}
+.vBtn.active{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
 .vBtn.up:hover{color:var(--ok);border-color:var(--ok)}
 .vBtn.down:hover{color:var(--hot);border-color:var(--hot)}
 .vBtn.share:hover{color:var(--accentTxt);border-color:var(--accentTxt)}
@@ -360,6 +361,43 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 
   <div id="toasts"></div>
 
+  <!-- Admin Message Panel -->
+  <div id="adminPanel" class="hidden" style="position:fixed;top:0;right:0;width:320px;max-height:100vh;z-index:6000;background:var(--panel);border-left:2px solid var(--accent);box-shadow:-5px 0 20px rgba(0,0,0,0.4);overflow-y:auto;padding:16px">
+    <!-- Login Section -->
+    <div id="adminLoginSection">
+      <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt);margin-bottom:16px">Administrator Access</h4>
+      <p style="font-size:13px;margin-bottom:16px;color:var(--muted)">Please sign in with your Google account to broadcast messages.</p>
+      <button id="adminSignInBtn" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase;margin-bottom:12px">Sign In with Google</button>
+      <p id="adminLoginError" style="color:var(--hot);font-size:12px;display:none;text-align:center"></p>
+    </div>
+    
+    <!-- Message Form (Hidden until logged in as admin) -->
+    <div id="adminMessageForm" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt)">Broadcast Message</h4>
+        <button id="adminClose" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer">✕</button>
+      </div>
+      <label class="lbl" style="margin-top:0">Message</label>
+      <textarea id="adminMsgText" class="mIn" rows="3" placeholder="Enter message for all users..." style="resize:vertical"></textarea>
+      <label class="lbl">Priority</label>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="vBtn" data-style="normal" style="flex:1" onclick="selectAdminStyle(this,'normal')">Normal</button>
+        <button class="vBtn" data-style="urgent" style="flex:1" onclick="selectAdminStyle(this,'urgent')">Urgent 🔴</button>
+      </div>
+      <label class="lbl">Duration (minutes)</label>
+      <input type="number" id="adminDuration" class="mIn" value="60" min="5" max="1440" step="5" style="margin-bottom:16px"/>
+      <button id="adminSend" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase">Send to All Users</button>
+      <p id="adminUserDisplay" style="margin-top:12px;font:400 9px 'Space Mono';color:var(--muted);line-height:1.6"></p>
+      <p style="margin-top:8px;font:400 9px 'Space Mono';color:var(--muted);line-height:1.6">Tip: Press <kbd style="background:var(--panel2);padding:2px 6px;border:1px solid var(--line)">Ctrl+M</kbd> to toggle this panel</p>
+    </div>
+  </div>
+  
+  <div id="announcementBar" class="hidden" style="position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:1500;display:flex;align-items:center;gap:12px;background:var(--accent);color:var(--accentInk);padding:10px 20px;font-size:13px;font-weight:600;letter-spacing:.08em;box-shadow:var(--shadow);max-width:min(94%,700px);border:2px solid var(--line2)">
+    <span style="font-size:16px">📢</span>
+    <span id="announcementText" style="flex:1"></span>
+    <button id="announcementClose" style="background:none;border:none;font-size:18px;color:inherit;cursor:pointer;padding:0 4px">✕</button>
+  </div>
+
   <div id="modal" class="hidden">
     <div class="modalCard corners">
       <button id="modalClose" aria-label="Close">✕</button>
@@ -380,6 +418,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script>
 /* ════════════════ FIREBASE (live sync for everyone) ════════════════ */
 const FIREBASE_CONFIG = {
@@ -391,6 +430,63 @@ const FIREBASE_CONFIG = {
   appId: "1:510146051905:web:fda7d9aac583dc5283abc0",
   measurementId: "G-NJQWG293Z7"
 };
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+}
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// SECURITY: Only this email can broadcast messages
+// This email is checked server-side via Firebase Security Rules (see firestore.rules)
+const ADMIN_EMAIL = "primegamer2008@outlook.com";
+
+// Auth State Observer for Admin Panel
+auth.onAuthStateChanged((user) => {
+  const loginSection = document.getElementById('adminLoginSection');
+  const messageForm = document.getElementById('adminMessageForm');
+  const signInBtn = document.getElementById('adminSignInBtn');
+  const errorMsg = document.getElementById('adminLoginError');
+  const userDisplay = document.getElementById('adminUserDisplay');
+
+  if (user) {
+    if (user.email === ADMIN_EMAIL) {
+      // Authorized admin
+      loginSection.classList.add('hidden');
+      messageForm.classList.remove('hidden');
+      userDisplay.textContent = `✓ Logged in as ${user.email}`;
+      signInBtn.textContent = "Sign Out";
+      signInBtn.onclick = () => auth.signOut();
+      errorMsg.style.display = 'none';
+    } else {
+      // Wrong user
+      loginSection.classList.remove('hidden');
+      messageForm.classList.add('hidden');
+      errorMsg.textContent = `Access denied: ${user.email} is not an administrator.`;
+      errorMsg.style.display = 'block';
+      signInBtn.textContent = "Sign Out";
+      signInBtn.onclick = () => auth.signOut();
+    }
+  } else {
+    // Not logged in
+    loginSection.classList.remove('hidden');
+    messageForm.classList.add('hidden');
+    errorMsg.style.display = 'none';
+    userDisplay.textContent = '';
+    signInBtn.textContent = "Sign In with Google";
+    signInBtn.onclick = handleAdminSignIn;
+  }
+});
+
+function handleAdminSignIn() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch((error) => {
+    console.error("Admin login failed", error);
+    document.getElementById('adminLoginError').textContent = "Login failed: " + error.message;
+    document.getElementById('adminLoginError').style.display = 'block';
+  });
+}
 
 (function(){
   const ico='https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png';
@@ -420,13 +516,58 @@ let deviceId = LS.raw(K_DEV);
 if(!deviceId){ deviceId=Math.random().toString(36).slice(2,12); LS.rawSet(K_DEV, deviceId); }
 
 /* ================= Firebase ================= */
-let db=null, syncMode=false, reports=[];
+let db=null, syncMode=false, reports=[], announcements=[];
 if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
   try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); syncMode=true; }catch(e){ syncMode=false; }
 }
 const syncTag=$('#syncTag');
 function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.className='syncTag '+(syncMode?'live':'local'); }
 paintSyncBadge();
+
+/* ================= Announcements ================= */
+function startAnnouncementSync(){
+  if(!syncMode) return;
+  db.collection('announcements').where('active','==',true).orderBy('ts','desc').limit(5)
+    .onSnapshot(snap=>{
+      announcements=[];
+      snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
+      renderAnnouncements();
+    }, err=>{ console.log('Announcement sync error:',err); });
+}
+
+function renderAnnouncements(){
+  const now=Date.now();
+  const active=announcements.filter(a=>{
+    const expires=a.expires||0;
+    return !a.hidden && (expires===0 || now<expires);
+  });
+  if(active.length===0){ $('#announcementBar').classList.add('hidden'); return; }
+  const msg=active[0];
+  $('#announcementText').textContent=msg.message||'';
+  $('#announcementBar').classList.remove('hidden');
+  if(msg.style==='urgent'){
+    $('#announcementBar').style.background='var(--hot)';
+    $('#announcementText').style.color='#fff';
+  }else{
+    $('#announcementBar').style.background='var(--accent)';
+    $('#announcementText').style.color='var(--accentInk)';
+  }
+}
+
+function broadcastMessage(message, style='normal', durationMin=60){
+  if(!syncMode){ toast('LOCAL MODE - CANNOT BROADCAST','warn'); return Promise.reject('local'); }
+  const ann={
+    message:message,
+    style:style,
+    ts:Date.now(),
+    expires: durationMin>0 ? Date.now()+durationMin*60000 : 0,
+    active:true,
+    hidden:false
+  };
+  return db.collection('announcements').add(ann)
+    .then(()=>{ toast('MESSAGE BROADCAST TO ALL USERS','ok'); })
+    .catch(e=>{ toast('BROADCAST FAILED','warn'); console.error(e); });
+}
 
 const urlSpot = new URLSearchParams(location.search).get('spot');
 let pendingSpot = urlSpot || null;
@@ -755,6 +896,35 @@ function closeModal(){ modal.classList.add('hidden'); pendingLoc=null; noteIn.va
 $('#modalClose').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{ if(e.target===modal)closeModal(); });
 
+/* Announcement bar close */
+$('#announcementClose').addEventListener('click',()=>{
+  $('#announcementBar').classList.add('hidden');
+  if(syncMode && announcements.length>0){
+    db.collection('announcements').doc(announcements[0].id).update({hidden:true});
+  }
+});
+
+/* Admin Panel */
+let adminStyle='normal';
+window.selectAdminStyle=function(btn,style){
+  adminStyle=style;
+  document.querySelectorAll('#adminPanel .vBtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+};
+$('#adminClose').addEventListener('click',()=>{$('#adminPanel').classList.add('hidden');});
+$('#adminSend').addEventListener('click',()=>{
+  const msg=$('#adminMsgText').value.trim();
+  if(!msg){toast('ENTER A MESSAGE FIRST','warn');return;}
+  const dur=parseInt($('#adminDuration').value)||60;
+  broadcastMessage(msg,adminStyle,dur).then(()=>{
+    $('#adminMsgText').value='';
+    $('#adminPanel').classList.add('hidden');
+  });
+});
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='m'){e.preventDefault();$('#adminPanel').classList.toggle('hidden');}
+});
+
 function cooldownRemaining(){
   let last=parseInt(LS.raw(K_LAST)||'0',10);
   if(syncMode){ const mine=reports.filter(r=>r.deviceId===deviceId).reduce((m,r)=>Math.max(m,r.ts||0),0); last=Math.max(last,mine); }
@@ -804,6 +974,10 @@ submitBtn.addEventListener('click',async()=>{
 });
 
 /* ================= feed & stats ================= */
+
+/* Admin: Broadcast message to all users (call from browser console) */
+window.broadcastMessage = broadcastMessage;
+
 function renderFeed(){
   const list=[...reports].sort((a,b)=> (isFlagged(a)-isFlagged(b)) || (b.ts-a.ts));
   $('#feedCount').textContent=list.length?list.length+' ACTIVE':'';
@@ -846,7 +1020,7 @@ $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#
 
 /* ================= boot ================= */
 applyTheme();
-if(syncMode){ startSync(); }
+if(syncMode){ startSync(); startAnnouncementSync(); }
 else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
   reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
   reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }

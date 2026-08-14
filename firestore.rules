@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only allow reads/writes to announcements if the user is logged in
+    // AND their email matches the specific admin email exactly.
+    // This check happens on the server, so it cannot be bypassed by client-side hacks.
+    match /announcements/{announcementId} {
+      allow read: if true; // Anyone can see messages
+      allow write: if request.auth != null 
+                   && request.auth.token.email == 'primegamer2008@outlook.com';
+    }
+  }
+}
