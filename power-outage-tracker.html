@@ -131,10 +131,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   display:flex;justify-content:space-between;align-items:center;text-transform:uppercase}
 .ftL{display:flex;align-items:center;gap:8px}
 .refreshRow{display:flex;align-items:center;gap:10px;margin-left:auto}
-#refreshBtn{border:1px solid var(--line2);background:var(--panel2);color:var(--muted);padding:6px 10px;
-  font:700 10px 'Space Mono';transition:.12s;display:flex;align-items:center;gap:6px}
-#refreshBtn:hover{color:var(--text);border-color:var(--accentTxt)}
-#refreshBtn:active{transform:translate(1px,1px)}
 #nextRefresh{font:400 9px 'Space Mono';color:var(--muted);letter-spacing:.08em}
 .feedItem{display:flex;flex-direction:column;gap:4px;padding:10px 14px 10px 12px;border-bottom:1px solid var(--line);
   border-left:3px solid var(--muted);animation:fadeIn .25s ease;transition:background .15s}
@@ -346,7 +342,6 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
         <span class="ftL"><span class="led"></span>LIVE FEED</span>
         <div class="refreshRow">
           <span id="nextRefresh" class="mono"></span>
-          <button id="refreshBtn" title="Refresh now">⟳ REFRESH</button>
         </div>
         <span id="feedCount" class="mono"></span>
       </div>
@@ -979,15 +974,6 @@ $('#trafficToggle').addEventListener('click',()=>{
   $('#trafficToggle').classList.toggle('active', trafficOn);
   if(trafficOn) trafficLayer.addTo(map);
   else map.removeLayer(trafficLayer);
-});
-
-// Manual refresh button
-document.getElementById('refreshBtn').addEventListener('click', ()=>{
-  if(syncMode){
-    fetchReports();
-    nextRefreshTime = Date.now() + REPORT_POLL_MS;
-    toast('REFRESHED','ok');
-  }
 });
 
 /* ================= boot ================= */
