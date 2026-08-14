@@ -92,7 +92,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   font:400 10px 'Space Mono';letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
 #statusBar b{color:var(--accentTxt);font-weight:700}
 
-.layers{position:absolute;top:12px;right:12px;z-index:930;display:flex;flex-direction:column;gap:6px}
+.layers{position:absolute;top:12px;right:12px;z-index:950;display:flex;flex-direction:column;gap:6px}
 .layerBtn{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);
   padding:10px 15px;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
   transition:transform .12s,background .12s,color .12s;box-shadow:var(--shadowSm)}
@@ -102,7 +102,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .layerBtn .sq{width:8px;height:8px;background:currentColor;flex:0 0 8px}
 .layerBtn.na{opacity:.5}
 
-#hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:960;display:flex;gap:10px;align-items:center;
+#hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:980;display:flex;gap:10px;align-items:center;
   background:var(--panel);border:2px solid var(--accent);color:var(--text);padding:10px 14px;font-size:13px;font-weight:500;
   letter-spacing:.08em;box-shadow:var(--shadow);max-width:min(94%,580px)}
 #hint .hBtn{border:1px solid var(--line2);padding:9px 13px;font-size:11px;font-weight:600;letter-spacing:.14em;
@@ -160,7 +160,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
 .empty p{font:400 10.5px 'Space Mono';line-height:1.8}
 .footNote{padding:10px 14px calc(10px + var(--safeB));font:400 9px 'Space Mono';color:var(--muted);line-height:1.7;border-top:1px solid var(--line)}
 
-#radarBar{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);z-index:920;display:flex;align-items:center;gap:11px;
+#radarBar{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);z-index:970;display:flex;align-items:center;gap:11px;
   background:var(--panel);border:1px solid var(--line2);padding:9px 13px;box-shadow:var(--shadow);max-width:94%}
 #radarPlay{width:36px;height:36px;border:1px solid var(--line2);background:var(--panel2);color:var(--accentTxt);font-size:11px}
 #radarPlay:active{transform:translate(1px,1px)}
@@ -248,7 +248,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   #hint{top:14px;font-size:11px;padding:10px;gap:8px;flex-wrap:wrap;justify-content:center}
   #hint .hBtn{padding:12px 14px;font-size:11px}
   #legend{display:none}
-  .layers{top:auto;bottom:calc(var(--sheetH,170px) + 72px);right:auto;left:10px;flex-direction:row;
+  .layers{top:auto;bottom:calc(var(--sheetH,170px) + 140px);right:auto;left:10px;flex-direction:row;
     max-width:calc(100vw - 20px);overflow-x:auto;gap:6px;padding-bottom:2px}
   .layerBtn{padding:12px 13px;font-size:10.5px;flex:0 0 auto;min-height:44px}
   #panel{top:auto;left:0;right:0;bottom:0;width:auto;border-left:none;border-right:none;border-bottom:none;
@@ -259,7 +259,7 @@ header{flex:0 0 auto;display:flex;align-items:stretch;background:var(--panel);bo
   .statRow{margin-top:8px}
   #reportBtn{min-height:54px}
   /* Radar bar: move below map buttons on mobile to avoid overlap */
-  #radarBar{left:10px;right:10px;transform:none;bottom:calc(var(--sheetH,170px) + 60px);
+  #radarBar{left:10px;right:10px;transform:none;bottom:calc(var(--sheetH,170px) + 150px);
     justify-content:center;padding:10px;max-width:none}
   #radarPlay{width:44px;height:44px;font-size:13px}
   #radarScrub{flex:1;width:auto;min-width:60px;height:32px}
