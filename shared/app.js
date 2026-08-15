@@ -920,4 +920,4 @@ if(!hasSeenOnboarding){
   },1500);
 }
 
-setTimeout(()=>{ $('#boot').classList.add('done');
+setTimeout(()=>{ $('#boot').classList.add('done'); }, 200);
