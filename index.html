@@ -43,25 +43,25 @@
     <div class="countBox"><b id="statLive">0</b><span>ACTIVE</span></div>
     <div class="countBox hotbox"><b id="statHotTop">0</b><span>HOTSPOTS</span></div>
     <div class="syncBox"><span class="led"></span><span class="syncTag local" id="syncTag">LOCAL</span></div>
-    <button id="themeBtn" title="Switch map theme">☀</button>
+    <button id="themeBtn" title="Switch map theme" aria-label="Toggle light/dark theme">☀</button>
   </div>
 </header>
-<div class="hazard"></div>
+<div class="hazard" role="alert" aria-live="polite"></div>
 
 <div id="mapWrap">
-  <div id="map"></div>
+  <div id="map" role="application" aria-label="Interactive map showing NIPSCO truck locations"></div>
 
-  <div class="layers" id="layerStack">
-    <button class="layerBtn active" id="heatToggle"><span class="sq"></span>Heat</button>
-    <button class="layerBtn" id="bubbleToggle"><span class="sq"></span>Bubbles</button>
-    <button class="layerBtn" id="radarToggle"><span class="sq"></span>Radar</button>
-    <button class="layerBtn" id="trafficToggle"><span class="sq"></span>Google Maps</button>
+  <div class="layers" id="layerStack" role="group" aria-label="Map layer controls">
+    <button class="layerBtn active" id="heatToggle" aria-pressed="true"><span class="sq"></span>Heat</button>
+    <button class="layerBtn" id="bubbleToggle" aria-pressed="false"><span class="sq"></span>Bubbles</button>
+    <button class="layerBtn" id="radarToggle" aria-pressed="false"><span class="sq"></span>Radar</button>
+    <button class="layerBtn" id="trafficToggle" aria-pressed="false"><span class="sq"></span>Google Maps</button>
   </div>
 
-  <div id="hint" class="hidden">
-    <span>TAP THE MAP WHERE YOU SAW THE TRUCK</span>
-    <button class="hBtn geo" id="hintGeo">MY LOCATION</button>
-    <button class="hBtn" id="hintCancel">CANCEL</button>
+  <div id="hint" class="hidden" role="dialog" aria-modal="true" aria-labelledby="hintTitle">
+    <span id="hintTitle">TAP THE MAP WHERE YOU SAW THE TRUCK</span>
+    <button class="hBtn geo" id="hintGeo" aria-label="Use my current location">MY LOCATION</button>
+    <button class="hBtn" id="hintCancel" aria-label="Cancel report">CANCEL</button>
   </div>
 
   <aside id="panel" class="corners collapsed">
@@ -72,7 +72,7 @@
         <div class="mini"><b id="statHot">0</b><span>HOTSPOTS</span></div>
         <div class="mini"><b id="statNext">—</b><span>EXPIRES</span></div>
       </div>
-      <button id="reportBtn"><span>REPORT TRUCK</span><span id="cdChip" class="hidden"></span></button>
+      <button id="reportBtn" aria-label="Report a truck sighting"><span>REPORT TRUCK</span><span id="cdChip" class="hidden"></span></button>
     </div>
     <div class="panelScroll">
       <div class="feedTitle">
@@ -87,29 +87,29 @@
     <div class="footNote">UNOFFICIAL COMMUNITY PROJECT — NOT AFFILIATED WITH NIPSCO / NISOURCE. REPORTS AUTO-EXPIRE. FOR OUTAGES OR EMERGENCIES CALL 911, 211, OR NIPSCO AT 1-800-464-7726. FOLLOW GLW AT <a href="https://www.facebook.com/GriffithLW" target="_blank" rel="noopener noreferrer" style="color: var(--accentTxt); text-decoration: none;">www.facebook.com/GriffithLW</a>.</div>
   </aside>
 
-  <div id="radarBar" class="corners hidden">
-    <button id="radarPlay" title="Play / pause">▶</button>
-    <input type="range" id="radarScrub" min="0" max="0" value="0"/>
-    <span id="radarTime">--:--</span>
+  <div id="radarBar" class="corners hidden" role="region" aria-label="Weather radar controls">
+    <button id="radarPlay" title="Play / pause" aria-label="Toggle radar animation">▶</button>
+    <input type="range" id="radarScrub" min="0" max="0" value="0" aria-label="Radar timeline scrubber"/>
+    <span id="radarTime" aria-live="polite">--:--</span>
     <span class="rTag" id="pastTag">RADAR</span>
     <span class="rTag now hidden" id="nowTag">NOWCAST</span>
-    <div class="opWrap">OPACITY<input type="range" id="radarOpacity" min="15" max="95" value="65"/></div>
+    <div class="opWrap">OPACITY<input type="range" id="radarOpacity" min="15" max="95" value="65" aria-label="Radar opacity"/></div>
   </div>
 
-  <div id="legend" class="corners">
+  <div id="legend" class="corners" role="note" aria-label="Map legend">
     <h4>Sighting density</h4>
     <div class="grad"></div>
     <div class="gradLbls"><span>LOW</span><span>HIGH</span></div>
     <p>No exact points — locations fuzzed ±400 m. ▲ confirms a sighting, ▼ flags it.</p>
   </div>
 
-  <div id="statusBar">
+  <div id="statusBar" role="status" aria-live="polite">
     <span>POS <b id="cCoord">41.320 / -86.900</b></span>
     <span id="cGrid">GRID — NORTHERN INDIANA · NIPSCO TERRITORY</span>
     <span><b id="cClock">--:--:--</b> · <b id="cZoom">Z8</b></span>
   </div>
 
-  <div id="toasts"></div>
+  <div id="toasts" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- Admin Message Panel -->
   <div id="adminPanel" class="hidden" style="position:fixed;top:0;right:0;width:320px;max-height:100vh;z-index:6000;background:var(--panel);border-left:2px solid var(--accent);box-shadow:-5px 0 20px rgba(0,0,0,0.4);overflow-y:auto;padding:16px">
@@ -117,7 +117,7 @@
     <div id="adminLoginSection">
       <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt);margin-bottom:16px">Administrator Access</h4>
       <p style="font-size:13px;margin-bottom:16px;color:var(--muted)">Please sign in with your Google account to broadcast messages.</p>
-      <button id="adminSignInBtn" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase;margin-bottom:12px">Sign In with Google</button>
+      <button id="adminSignInBtn" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase;margin-bottom:12px" aria-label="Sign in with Google account">Sign In with Google</button>
       <p id="adminLoginError" style="color:var(--hot);font-size:12px;display:none;text-align:center"></p>
     </div>
     
@@ -125,7 +125,7 @@
     <div id="adminMessageForm" class="hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt)">Broadcast Message</h4>
-        <button id="adminClose" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer">✕</button>
+        <button id="adminClose" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer" aria-label="Close admin panel">✕</button>
       </div>
       <label class="lbl" style="margin-top:0">Message</label>
       <textarea id="adminMsgText" class="mIn" rows="3" placeholder="Enter message for all users..." style="resize:vertical"></textarea>
@@ -136,7 +136,7 @@
       </div>
       <label class="lbl">Duration (minutes)</label>
       <input type="number" id="adminDuration" class="mIn" value="60" min="5" max="1440" step="5" style="margin-bottom:16px"/>
-      <button id="adminSend" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase">Send to All Users</button>
+      <button id="adminSend" style="width:100%;border:2px solid var(--accent);padding:12px;font-weight:600;font-size:14px;letter-spacing:.15em;color:var(--accentInk);background:var(--accent);text-transform:uppercase" aria-label="Broadcast message to all users">Send to All Users</button>
       
       <h4 style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accentTxt);margin-top:24px;margin-bottom:12px">Active Announcements</h4>
       <div id="adminAnnouncementsList" style="max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
@@ -149,7 +149,7 @@
   <div id="announcementBar" class="hidden" style="position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:1500;display:flex;align-items:center;gap:12px;background:var(--accent);color:var(--accentInk);padding:10px 20px;font-size:13px;font-weight:600;letter-spacing:.08em;box-shadow:var(--shadow);max-width:min(94%,700px);border:2px solid var(--line2)">
     <span style="font-size:16px">📢</span>
     <span id="announcementText" style="flex:1"></span>
-    <button id="announcementClose" style="background:none;border:none;font-size:18px;color:inherit;cursor:pointer;padding:0 4px">✕</button>
+    <button id="announcementClose" style="background:none;border:none;font-size:18px;color:inherit;cursor:pointer;padding:0 4px" aria-label="Dismiss announcement">✕</button>
   </div>
 
   <div id="modal" class="hidden">
@@ -161,7 +161,7 @@
       <div class="statusGrid" id="statusGrid"></div>
       <label class="lbl">Note — optional</label>
       <input class="mIn" id="noteIn" maxlength="120" placeholder="Bucket truck by the substation…" autocomplete="off"/>
-      <button id="submitBtn">Submit sighting</button>
+      <button id="submitBtn" aria-label="Submit truck sighting report">Submit sighting</button>
       <div id="cdNote"></div>
       <div class="expireHint" id="expireHint"></div>
     </div>
@@ -174,896 +174,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script>
-/* ════════════════ FIREBASE (live sync for everyone) ════════════════ */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDZnYc1kU0HyD_djZ2JqgGKyp1kAgP5Y1g",
-  authDomain: "nipsco-tracker.firebaseapp.com",
-  projectId: "nipsco-tracker",
-  storageBucket: "nipsco-tracker.firebasestorage.app",
-  messagingSenderId: "510146051905",
-  appId: "1:510146051905:web:fda7d9aac583dc5283abc0",
-  measurementId: "G-NJQWG293Z7"
-};
-
-// Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(FIREBASE_CONFIG);
-}
-const auth = firebase.auth();
-
-// SECURITY: Only this email can broadcast messages
-// This email is checked server-side via Firebase Security Rules (see firestore.rules)
-const ADMIN_EMAIL = "primegamer2008@outlook.com";
-
-// Auth State Observer for Admin Panel
-auth.onAuthStateChanged((user) => {
-  const loginSection = document.getElementById('adminLoginSection');
-  const messageForm = document.getElementById('adminMessageForm');
-  const signInBtn = document.getElementById('adminSignInBtn');
-  const errorMsg = document.getElementById('adminLoginError');
-  const userDisplay = document.getElementById('adminUserDisplay');
-
-  if (user) {
-    // Validate email format and check admin status
-    const isValidEmail = typeof user.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email);
-    const isAdmin = isValidEmail && user.email === ADMIN_EMAIL;
-    window.isAdmin = isAdmin; // Expose for delete button logic
-    if (isAdmin) {
-      // Authorized admin
-      loginSection.classList.add('hidden');
-      messageForm.classList.remove('hidden');
-      userDisplay.textContent = `✓ Logged in as ${esc(user.email)}`;
-      signInBtn.textContent = "Sign Out";
-      signInBtn.onclick = () => auth.signOut();
-      errorMsg.style.display = 'none';
-    } else {
-      // Wrong user or invalid email
-      loginSection.classList.remove('hidden');
-      messageForm.classList.add('hidden');
-      errorMsg.textContent = `Access denied: ${(isValidEmail ? esc(user.email) : 'Invalid user')} is not an administrator.`;
-      errorMsg.style.display = 'block';
-      signInBtn.textContent = "Sign Out";
-      signInBtn.onclick = () => auth.signOut();
-    }
-  } else {
-    // Not logged in
-    window.isAdmin = false;
-    loginSection.classList.remove('hidden');
-    messageForm.classList.add('hidden');
-    errorMsg.style.display = 'none';
-    userDisplay.textContent = '';
-    signInBtn.textContent = "Sign In with Google";
-    signInBtn.onclick = handleAdminSignIn;
-  }
-});
-
-function handleAdminSignIn() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch((error) => {
-    console.error("Admin login failed", error);
-    const safeMsg = typeof error.message === 'string' ? esc(error.message.slice(0,200)) : 'Unknown error';
-    document.getElementById('adminLoginError').textContent = "Login failed: " + safeMsg;
-    document.getElementById('adminLoginError').style.display = 'block';
-  });
-}
-
-(function(){
-  const ico='https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png';
-  const m={name:'NIPSCO Truck Tracker',short_name:'NIPSCO Tracker',start_url:'.',display:'standalone',
-    background_color:'#101315',theme_color:'#101315',icons:[{src:ico,sizes:'512x512',type:'image/png'}]};
-  document.getElementById('manifestLink').href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(m));
-})();
-
-/* ================= config & helpers ================= */
-const COOLDOWN_SEC = 60, HOURLY_CAP = 8;
-const K_REP='ntt4_reports', K_LAST='ntt4_last', K_TIMES='ntt4_times', K_DEV='ntt4_devid', K_THEME='ntt4_theme';
-const TTL_MIN = { moving:60, other:80, parked:90, working:120, storm:180 };
-const MAX_SYNC_MS = 45*60*1000; // Reduced to 45 minutes to cut Firebase reads (matches poll interval)
-const $ = s => document.querySelector(s);
-const LS = {
-  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
-  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
-  raw(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
-  rawSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
-};
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function ago(ts){ const s=(Date.now()-ts)/1e3; if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
-const ttlOf = r => (TTL_MIN[r.status]||45)*60000;
-function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
-
-let deviceId = LS.raw(K_DEV);
-if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toString(36).slice(2,12); LS.rawSet(K_DEV, deviceId); }
-
-/* ================= Firebase ================= */
-let db=null, syncMode=false, reports=[], announcements=[], dismissedAnnouncementIds=new Set();
-let announcementPollTimer=null, reportsPollTimer=null;
-if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
-  try{ 
-    firebase.initializeApp(FIREBASE_CONFIG); 
-    db=firebase.firestore(); 
-    // Enable offline persistence to cache data and reduce reads
-    db.enablePersistence().catch(err=>{ console.log('Persistence error:',err); });
-    syncMode=true; 
-  }catch(e){ syncMode=false; }
-}
-const syncTag=$('#syncTag');
-function paintSyncBadge(){ syncTag.textContent=syncMode?'LIVE':'LOCAL'; syncTag.className='syncTag '+(syncMode?'live':'local'); }
-paintSyncBadge();
-
-/* ================= Announcements ================= */
-// Cache to avoid redundant renders
-let lastAnnouncementRender = null;
-
-async function fetchAnnouncements(){
-  if(!syncMode) return;
-  try{
-    const snap = await db.collection('announcements')
-      .orderBy('ts', 'desc')
-      .get();
-    announcements=[];
-    snap.forEach(d=>{ const a=d.data(); a.id=d.id; announcements.push(a); });
-    
-    // Only re-render if announcements actually changed
-    const newHash = announcements.map(a=>a.id+a.ts).join('|');
-    if(newHash !== lastAnnouncementRender){
-      lastAnnouncementRender = newHash;
-      renderAnnouncements();
-      renderFeed();
-    }
-  }catch(err){ console.log('Announcement fetch error:',err); }
-}
-
-function startAnnouncementSync(){
-  if(!syncMode) return;
-  fetchAnnouncements();
-  // Poll every 90 seconds (reduced from 60s) - announcements rarely change
-  announcementPollTimer = setInterval(fetchAnnouncements, 90000);
-}
-
-function renderAnnouncements(){
-  const now=Date.now();
-  const active=announcements.filter(a=>{
-    const expires=a.expires||0;
-    return !a.hidden && !dismissedAnnouncementIds.has(a.id) && (expires===0 || now<expires);
-  });
-  if(active.length===0){ $('#announcementBar').classList.add('hidden'); }
-  else{
-    // Show only the top 2 most recent announcements visually
-    const msg=active[0];
-    $('#announcementText').innerText=msg.message||'';
-    $('#announcementBar').classList.remove('hidden');
-    if(msg.style==='urgent'){
-      $('#announcementBar').style.background='var(--hot)';
-      $('#announcementText').style.color='#fff';
-    }else{
-      $('#announcementBar').style.background='var(--accent)';
-      $('#announcementText').style.color='var(--accentInk)';
-    }
-  }
-  renderAdminAnnouncementsList();
-}
-
-function renderAdminAnnouncementsList(){
-  const listEl = document.getElementById('adminAnnouncementsList');
-  if(!listEl) return;
-  const now=Date.now();
-  const active=announcements.filter(a=>{
-    const expires=a.expires||0;
-    return !a.hidden && (expires===0 || now<expires);
-  });
-  if(active.length===0){
-    listEl.innerHTML = '<p style="font:400 10px \'Space Mono\';color:var(--muted)">No active announcements</p>';
-    return;
-  }
-  listEl.innerHTML = active.map(a=>{
-    const expiresStr = a.expires ? new Date(a.expires).toLocaleString() : 'Never';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--line);margin-bottom:6px;background:var(--panel2)">
-      <div style="flex:1;min-width:0">
-        <div style="font:600 11px \'Space Mono\';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.message||''}</div>
-        <div style="font:400 9px \'Space Mono\';color:var(--muted)">Expires: ${expiresStr}</div>
-      </div>
-      <button onclick="deleteAnnouncement('${a.id}')" style="background:var(--hot);color:#fff;border:none;padding:6px 10px;font-size:12px;cursor:pointer;margin-left:8px">Delete</button>
-    </div>`;
-  }).join('');
-}
-
-function deleteAnnouncement(id){
-  if(!confirm('Delete this announcement?')) return;
-  if(!syncMode){ toast('LOCAL MODE - CANNOT DELETE','warn'); return; }
-  db.collection('announcements').doc(id).delete()
-    .then(()=>{ toast('Announcement deleted','ok'); })
-    .catch(e=>{ toast('Delete failed','warn'); console.error(e); });
-}
-
-function broadcastMessage(message, style='normal', durationMin=60){
-  if(!syncMode){ toast('LOCAL MODE - CANNOT BROADCAST','warn'); return Promise.reject('local'); }
-  const safeMsg = String(message||'').slice(0,500);
-  const safeStyle = ['urgent','normal'].includes(style) ? style : 'normal';
-  const safeDur = Math.min(Math.max(parseInt(durationMin)||60, 5), 1440);
-  const ann={
-    message:safeMsg,
-    style:safeStyle,
-    ts:Date.now(),
-    expires: safeDur>0 ? Date.now()+safeDur*60000 : 0,
-    active:true,
-    hidden:false
-  };
-  return db.collection('announcements').add(ann)
-    .then(()=>{ toast('MESSAGE BROADCAST TO ALL USERS','ok'); })
-    .catch(e=>{ toast('BROADCAST FAILED','warn'); console.error(e); });
-}
-
-const urlSpot = new URLSearchParams(location.search).get('spot');
-let pendingSpot = urlSpot || null;
-
-// Poll every 45 seconds instead of real-time listener - saves 95%+ reads
-// Cache to avoid redundant renders when data hasn't changed
-let lastReportsHash = null;
-let nextRefreshTime = 0;
-const REPORT_POLL_MS = 45000;
-
-async function fetchReports(){
-  if(!syncMode) return;
-  try{
-    const snap = await db.collection('reports')
-      .orderBy('ts', 'desc')
-      .get();
-    reports=[];
-    const now = Date.now();
-    snap.forEach(d=>{
-      const r=d.data();
-      r.id=d.id;
-      // Only keep reports within time window AND not expired
-      if(r.ts > now-MAX_SYNC_MS && (now-r.ts < ttlOf(r))){
-        r.ups=r.ups||0;
-        r.downs=r.downs||0;
-        r.voters=r.voters||[];
-        reports.push(r);
-      }
-    });
-    
-    // Only trigger updates if reports actually changed
-    const newHash = reports.map(r=>r.id+r.ts+(r.ups||0)+(r.downs||0)).join('|');
-    if(newHash !== lastReportsHash){
-      lastReportsHash = newHash;
-      afterChange();
-    }
-  }catch(err){ syncTag.textContent='OFFLINE'; toast('LIVE SYNC ERROR — CHECK FIRESTORE RULES','warn'); }
-}
-
-function startSync(){
-  fetchReports();
-  nextRefreshTime = Date.now() + REPORT_POLL_MS;
-  // Poll every 45 seconds (reduced from 30s) - balances freshness with read costs
-  reportsPollTimer = setInterval(()=>{
-    fetchReports();
-    nextRefreshTime = Date.now() + REPORT_POLL_MS;
-  }, REPORT_POLL_MS);
-}
-let layoutPending = false;
-function afterChange(){ 
-  refreshLayers(); 
-  renderFeed(); 
-  renderStats(); 
-  focusSpot(); 
-  scheduleLayoutBottom();
-}
-
-function scheduleLayoutBottom(){
-  if(layoutPending) return;
-  layoutPending = true;
-  requestAnimationFrame(()=>{
-    layoutPending = false;
-    layoutBottom();
-  });
-}
-
-const STATUSES = [
-  {k:'moving', label:'Moving', c:'#86c93a'}, {k:'parked', label:'Parked', c:'#4aa3e0'},
-  {k:'working', label:'Crews working', c:'#e0a63a'}, {k:'storm', label:'Storm / line work', c:'#e0783a'},
-  {k:'other', label:'Other', c:'#8a939d'}
-];
-const CITIES = [
-  ['Gary',41.5934,-87.3464],['Hammond',41.5834,-87.5000],['Merrillville',41.4739,-87.3325],['Crown Point',41.4170,-87.3653],
-  ['Valparaiso',41.4731,-87.0612],['Portage',41.5759,-87.1764],['Hobart',41.5323,-87.2550],['Michigan City',41.7075,-86.8950],
-  ['Chesterton',41.6106,-87.0642],['La Porte',41.6106,-86.7184],['South Bend',41.6764,-86.2520],['Elkhart',41.6820,-85.9767],
-  ['Goshen',41.5823,-85.8344],['Plymouth',41.3437,-86.3097],['Warsaw',41.2381,-85.8539],['Fort Wayne',41.0793,-85.1394],
-  ['Kokomo',40.4864,-86.1336],['Lafayette',40.4168,-86.8753],['Logansport',40.7545,-86.3567],['Peru',40.7539,-86.0683],
-  ['Huntington',40.8831,-85.4972],['Munster',41.5514,-87.5125],['Schererville',41.4917,-87.4548],['Griffith',41.5284,-87.4237],
-  ['East Chicago',41.6395,-87.4547],['Rensselaer',40.9361,-87.1517],['Kendallville',41.4412,-85.2650],['Columbia City',41.1570,-85.4883],
-  ['Whiting',41.6798,-87.4945],['Highland',41.5536,-87.4542],['Dyer',41.4942,-87.5217],['St John',41.4506,-87.4786],
-  ['Lowell',41.2914,-87.4203],['Hebron',41.3231,-87.2036],['Kouts',41.3334,-87.0270],['De Motte',41.1953,-87.2000],
-  ['Demotte',41.1953,-87.2000],['Wheatfield',41.2145,-87.0686],['Beverly Shores',41.6789,-86.9781],['Wanatah',41.4384,-86.8972],
-  ['Union Mills',41.5381,-86.7083],['Westville',41.5486,-86.7136],['Kingsbury',41.5703,-86.6361],['La Crosse',41.3145,-86.8942],
-  ['Winamac',41.0514,-86.6030],['Monterey',41.1664,-86.4889],['Francesville',41.0517,-86.8689],['Medaryville',41.1164,-86.9903],
-  ['Wolcott',40.7748,-86.9989],['Burnettsville',40.7634,-86.7986],['Monon',40.8659,-86.8711],['Reynolds',40.7492,-86.8722],
-  ['Brookston',40.5486,-86.7236],['Chalmers',40.6564,-86.8781],['Battle Ground',40.5089,-86.8372],['Dayton',40.3778,-86.7444],
-  ['Shadeland',40.3381,-86.8756],['Romney',40.2820,-86.9217],['Attica',40.2923,-87.2417],['Covington',40.1378,-87.3939],
-  ['Veedersburg',40.1134,-87.2564],['Fowler',40.6148,-87.3181],['Otterbein',40.5103,-87.0864],['Boswell',40.5034,-87.3306],
-  ['Kentland',40.7720,-87.4436],['Morocco',40.9470,-87.4520],['Goodland',40.7436,-87.3942],['Brook',40.8736,-87.3636],
-  ['Fair Oaks',40.9178,-87.3336],['Ambia',40.4867,-87.5161],['Earl Park',40.4698,-87.4120],['New Carlisle',41.7187,-86.4783],
-  ['Walkerton',41.4684,-86.4820],['North Liberty',41.5334,-86.4236],['Tyner',41.3717,-86.5408],['Bourbon',41.2956,-86.1161],
-  ['Etna Green',41.2767,-86.0575],['Mentone',41.1742,-86.0633],['Akron',41.1750,-86.1500],['Nappanee',41.6292,-86.0003],
-  ['Wakarusa',41.5539,-86.0192],['Middlebury',41.6331,-85.7022],['Bremen',41.4481,-86.1495],['Syracuse',41.4212,-85.7297],
-  ['Milford',41.4137,-85.8483],['North Webster',41.3334,-85.7069],['Silver Lake',41.1631,-85.8894],['Claypool',41.1320,-85.8805],
-  ['Pierceton',41.1973,-85.7083],['Winona Lake',41.2292,-85.8219],['North Manchester',41.0006,-85.7694],['Roanoke',40.9620,-85.3705],
-  ['Churubusco',41.2228,-85.3455],['Avilla',41.3550,-85.2555],['Rome City',41.4914,-85.3408],['Albion',41.2962,-85.3336],
-  ['Ligonier',41.4564,-85.5897],['Topeka',41.5434,-85.5625],['Howe',41.5764,-85.4231],['Lagrange',41.3539,-85.4186],
-  ['Shipshewana',41.6617,-85.5419],['Angola',41.6348,-84.9994],['Fremont',41.5489,-84.9336],['Waterloo',41.4331,-85.0219],
-  ['Auburn',41.3664,-85.0555],['Garrett',41.3506,-85.2633],['Ashley',41.4220,-85.2344],['Butler',41.3087,-84.8716],
-  ['Bluffton',40.7387,-85.1714],['Decatur',40.8281,-84.9247],['Monroeville',41.0064,-84.8916],['New Haven',41.0706,-85.0127],
-  ['Woodburn',41.1162,-84.8636],['Grabill',41.2117,-85.0664],['Markle',40.8262,-85.3319],['Ossian',40.8792,-85.3236],
-  ['Liberty Center',40.8098,-85.2780],['Warren',40.6828,-85.4116],['Andrews',40.8612,-85.5980],['Converse',40.5484,-85.8786],
-  ['Swayzee',40.5800,-85.8350],['Sweetser',40.5609,-85.7611],['Gas City',40.4867,-85.6083],['Jonesboro',40.5234,-85.5272],
-  ['Upland',40.4773,-85.4966],['Fairmount',40.4087,-85.6466],['Hartford City',40.4509,-85.3694],['Dunkirk',40.3837,-85.2077],
-  ['Redkey',40.3181,-85.2772],['Portland',40.4348,-84.9800],['Berne',40.6587,-84.9519],['Pennville',40.4131,-85.1503],
-  ['Tipton',40.2792,-86.0394],['Elwood',40.2787,-85.8383],['Alexandria',40.2606,-85.6794],['Summitville',40.3631,-85.6761],
-  ['Frankton',40.2223,-85.7289],['Lapel',40.0081,-85.7486],['Arcadia',40.2131,-86.0011],['Atlanta',40.1173,-86.2369],
-  ['Sheridan',40.1320,-86.2172],['Cicero',40.1323,-86.0208],['Windfall',40.1536,-86.0222],['Sharpsville',40.3742,-85.9189],
-  ['Hemlock',40.3467,-86.0761],['Bunker Hill',40.6500,-85.9694],['Galveston',40.5736,-86.2014],['Walton',40.6656,-86.3394],
-  ['Russiaville',40.4148,-86.1308],['Greentown',40.4684,-85.9642],['Burlington',40.4731,-86.3936],['Camden',40.6034,-86.5411],
-  ['Delphi',40.5875,-86.6755],['Flora',40.5503,-86.5255],['Monticello',40.7456,-86.7647],['Kewanna',41.0161,-86.4089],
-  ['Royal Center',40.8925,-86.4400],['Macy',40.9134,-86.1433],['Rochester',41.0614,-86.2189],['Knox',41.2942,-86.6236],
-  ['Culver',41.2228,-86.4289],['Argos',41.2373,-86.2200],['Grovertown',41.3573,-86.5328],['Hamlet',41.3700,-86.6011],
-  ['San Pierre',41.2414,-86.7058],['Star City',40.8178,-86.5336],['Wabash',40.7978,-85.8219],['Marion',40.5584,-85.6591],
-  ['Muncie',40.1953,-85.3863],['Anderson',40.1053,-85.6803],['New Castle',39.9289,-85.3702],['Rushville',39.6089,-85.4458],
-  ['Connersville',39.6412,-85.1414],['Greensburg',39.3370,-85.4830],['Shelbyville',39.5214,-85.7772],['Franklin',39.4806,-86.0550],
-  ['Greenfield',39.7853,-85.7697],['Indianapolis',39.7684,-86.1581],['Fishers',39.9568,-86.0139],['Lawrence',39.8387,-85.9986],
-  ['Lebanon',40.0470,-86.4683],['Crawfordsville',40.0409,-86.9000],['Frankfort',40.2792,-86.5108],['Noblesville',40.0456,-86.0086],
-  ['Westfield',40.0428,-86.1180],['Carmel',39.9784,-86.1180],['Winchester',40.1731,-84.9808],['Union City',40.1928,-84.8064],
-  ['Versailles',39.0137,-85.2603],['Osgood',39.1353,-85.2908],['Batesville',39.3006,-85.2227],['Brookville',39.4220,-84.9983],
-  ['Seymour',38.9592,-85.8908],['North Vernon',38.9953,-85.6247],['Columbus',39.2014,-85.9213],['Bloomington',39.1653,-86.5264],
-  ['Spencer',39.2870,-86.7647],['Nashville',39.2073,-86.2489],['Martinsville',39.4206,-86.4508],['Mooresville',39.6120,-86.3747],
-  ['Plainfield',39.7042,-86.3483],['Brownsburg',39.8428,-86.3956],['Avon',39.7603,-86.3997],['Danville',39.7606,-86.5264],
-  ['Greencastle',39.6445,-86.8647],['Cloverdale',39.5192,-86.8711],['Rockville',39.7642,-87.2261],['Newport',39.8814,-87.4083],
-  ['Williamsport',40.2823,-87.2853],['Perrysville',40.0278,-87.4656],['Terre Haute',39.4667,-87.4139],['Brazil',39.5237,-87.1272],
-  ['Clinton',39.6778,-87.4089],['Linton',39.0928,-87.1636],['Sullivan',39.0942,-87.4131],['Jasonville',39.1928,-87.2189],
-  ['Worthington',39.1192,-86.9836],['Vincennes',38.6773,-87.5248],['Washington',38.6592,-87.1731],['Princeton',38.3531,-87.5667],
-  ['Petersburg',38.4928,-87.2792],['Tell City',37.9520,-86.7669],['Jasper',38.3914,-86.9311],['Huntingburg',38.2978,-86.9542],
-  ['Boonville',38.0478,-87.2739],['Evansville',37.9748,-87.5558],['Mount Vernon',37.9331,-87.8942],['Oakland City',38.3373,-87.3481],
-  ['Jeffersonville',38.2776,-85.7372],['New Albany',38.2856,-85.8241],['Clarksville',38.2967,-85.7600],['Corydon',38.2120,-86.1219],
-  ['Charlestown',38.4506,-85.6680],['Sellersburg',38.4006,-85.7558],['Scottsburg',38.6856,-85.7702],['Salem',38.6034,-86.0992],
-  ['Bedford',38.8612,-86.4872],['Mitchell',38.7292,-86.4753],['Paoli',38.5562,-86.4689],['French Lick',38.5506,-86.6189],
-  ['Madison',38.7359,-85.3797],['Millersburg',41.4023,-85.8344],['Bristol',41.7223,-85.5836]
-];
-function nearestCity(lat,lng){
-  let best='Northern Indiana', bd=1e9;
-  for(const c of CITIES){ const dy=c[1]-lat, dx=(c[2]-lng)*Math.cos(lat*Math.PI/180);
-    const d=Math.sqrt(dy*dy+dx*dx)*111.32; if(d<bd){bd=d;best=c[0];} }
-  return bd<=35 ? 'near '+best+', IN' : 'near '+best;
-}
-function fuzz(lat,lng){ const g=0.004;
-  return [ +(Math.round(lat/g)*g + (Math.random()-0.5)*g*0.8).toFixed(5),
-           +(Math.round(lng/g)*g + (Math.random()-0.5)*g*0.8).toFixed(5) ]; }
-
-/* ================= map & theme ================= */
-const DARK_TILES='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const LIGHT_TILES='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const map = L.map('map',{ zoomControl:false, zoomSnap:0.5 }).setView([41.32,-86.9], 8);
-L.control.zoom({ position:'bottomright' }).addTo(map);
-let baseLayer = L.tileLayer(DARK_TILES, { subdomains:'abcd', maxZoom:19, attribution:'© OpenStreetMap © CARTO' }).addTo(map);
-
-let darkTheme = (LS.raw(K_THEME)||'dark')==='dark';
-function applyTheme(){
-  document.documentElement.setAttribute('data-theme', darkTheme?'dark':'light');
-  map.removeLayer(baseLayer);
-  baseLayer.setUrl(darkTheme?DARK_TILES:LIGHT_TILES);
-  baseLayer.addTo(map);
-  $('#themeBtn').textContent = darkTheme ? '☀' : '☾';
-}
-$('#themeBtn').addEventListener('click',()=>{
-  darkTheme=!darkTheme; LS.rawSet(K_THEME, darkTheme?'dark':'light'); applyTheme();
-});
-
-let showHeat=true, showBubbles=false, heatLayer=null, bubbleLayer=null, pointLayer=null;
-const isFlagged = r => (r.downs||0) >= 3;
-
-function heatPoints(){
-  const now=Date.now();
-  // Exclude 'other' and 'none' from heatmap
-  return reports.filter(r=>!isFlagged(r) && r.status && r.status.toLowerCase() !== 'other' && r.status.toLowerCase() !== 'none').map(r=>{
-    const rem=Math.max(0, 1-(now-r.ts)/ttlOf(r));
-    let w=0.2+0.8*rem;
-    if((r.ups||0)>=2) w=Math.min(1.25, w+0.3);
-    return [r.lat,r.lng,w];
-  });
-}
-function rebuildHeat(){
-  if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
-  if(showHeat){ heatLayer = L.heatLayer(heatPoints(),{
-      radius:42, blur:28, minOpacity:0.75, max:3.2,
-      gradient:{0.15:'#4c0d0d',0.35:'#b91c1c',0.55:'#ef4444',0.72:'#f97316',0.87:'#fbbf24',1:'#fef08a'}
-    }).addTo(map); }
-}
-function rebuildBubbles(){
-  if(bubbleLayer){ map.removeLayer(bubbleLayer); bubbleLayer=null; }
-  if(pointLayer){ map.removeLayer(pointLayer); pointLayer=null; }
-  
-  bubbleLayer = L.layerGroup();
-  pointLayer = L.layerGroup();
-  
-  const cells={};
-  // Separate reports: bubbles for real categories, points for 'other'/'none'
-  const bubbleReports = [];
-  const pointReports = [];
-  
-  reports.filter(r=>!isFlagged(r)).forEach(r=>{
-    const cat = (r.status||'').toLowerCase();
-    if(cat === 'other' || cat === 'none'){
-      pointReports.push(r);
-    } else {
-      const k=Math.round(r.lat/0.02)+':'+Math.round(r.lng/0.02); (cells[k]=cells[k]||[]).push(r);
-      bubbleReports.push(r);
-    }
-  });
-  
-  // Build Bubbles
-  Object.values(cells).forEach(arr=>{
-    const lat=arr.reduce((s,r)=>s+r.lat,0)/arr.length, lng=arr.reduce((s,r)=>s+r.lng,0)/arr.length;
-    const hot=arr.some(r=>(r.ups||0)>=2);
-    // Smaller radius multiplier to reduce bubble size
-    const rCircle=L.circle([lat,lng],{ radius:120+Math.min(800,Math.sqrt(arr.length)*180),
-      color:hot?'#ffc72e':'#ffb000', weight:hot?1.8:1.2, opacity:0.55, dashArray:hot?null:'4 4',
-      fillColor:'#ff8a3d', fillOpacity:0.22, interactive:true }).addTo(bubbleLayer);
-    // Click to show first report in bubble and pan to location
-    rCircle.on('click',()=>{
-      const rep=arr[0];
-      if(rep){
-        map.flyTo([rep.lat, rep.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
-        const st=STATUSES.find(s=>s.k===rep.status)||STATUSES[4];
-        const noteText=rep.note?(' — '+esc(rep.note)):'';
-        toast(st.label+noteText,'');
-      }
-    });
-  });
-  
-  // Build Exact Points for 'Other' / NIPSCO info
-  pointReports.forEach(r=>{
-    const pMarker=L.circleMarker([r.lat,r.lng],{ radius:6,
-      color:'#fff', weight:2, opacity:0.9,
-      fillColor:'#6c757d', fillOpacity:0.9, interactive:true }).addTo(pointLayer);
-    pMarker.on('click',()=>{
-      map.flyTo([r.lat, r.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
-      const st=STATUSES.find(s=>s.k===r.status)||STATUSES[4];
-      const noteText=r.note?(' — '+esc(r.note)):'';
-      toast(st.label+noteText,'');
-    });
-  });
-  
-  if(showBubbles) bubbleLayer.addTo(map);
-  pointLayer.addTo(map); // Always show exact points
-}
-function refreshLayers(){ rebuildHeat(); rebuildBubbles(); }
-
-/* status strip */
-const cCoord=$('#cCoord'), cZoom=$('#cZoom'), cClock=$('#cClock');
-map.on('mousemove',e=>{ cCoord.textContent=e.latlng.lat.toFixed(3)+' / '+e.latlng.lng.toFixed(3); });
-function updZoom(){ cZoom.textContent='Z'+map.getZoom(); }
-map.on('zoomend moveend', updZoom);
-setInterval(()=>{ cClock.textContent=new Date().toLocaleTimeString([], {hour12:false}); },1000);
-cClock.textContent=new Date().toLocaleTimeString([], {hour12:false});
-
-/* ================= weather radar (RainViewer) ================= */
-let radarReady=false, radarLoading=false, radarOn=false;
-let radarHost='', radarFrames=[], radarPastCount=0, radarLayers=[], radarIdx=0, radarTimer=null, radarOpacity=0.65;
-const radarBar=$('#radarBar'), scrub=$('#radarScrub'), radarTime=$('#radarTime'),
-      nowTag=$('#nowTag'), pastTag=$('#pastTag'), playBtn=$('#radarPlay');
-async function initRadar(){
-  try{
-    const res=await fetch('https://api.rainviewer.com/public/weather-maps.json'); const d=await res.json();
-    radarHost=d.host; const past=(d.radar&&d.radar.past)||[], nowc=(d.radar&&d.radar.nowcast)||[];
-    radarFrames=past.concat(nowc); radarPastCount=past.length;
-    if(!radarFrames.length) throw 0;
-    scrub.max=radarFrames.length-1; radarIdx=Math.max(0,radarPastCount-1); scrub.value=radarIdx; radarReady=true;
-  }catch(e){ radarReady=false; $('#radarToggle').classList.add('na'); }
-}
-function frameLayer(i){ if(radarLayers[i]) return radarLayers[i];
-  const f=radarFrames[i];
-  const l=L.tileLayer(radarHost+f.path+'/256/{z}/{x}/{y}/2/1_1.png',{opacity:0,zIndex:250,maxNativeZoom:7,maxZoom:18,attribution:'Radar © RainViewer'});
-  radarLayers[i]=l; return l; }
-function showRadarFrame(i){ radarIdx=i; const f=radarFrames[i]; if(!f)return;
-  const l=frameLayer(i); if(radarOn){l.addTo(map);l.setOpacity(radarOpacity);}
-  radarLayers.forEach((o,j)=>{ if(o&&j!==i)o.setOpacity(0); });
-  scrub.value=i; radarTime.textContent=new Date(f.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-  const isNow=i>=radarPastCount; nowTag.classList.toggle('hidden',!isNow); pastTag.classList.toggle('hidden',isNow); }
-function stopRadarPlay(){ if(radarTimer){clearInterval(radarTimer);radarTimer=null;playBtn.textContent='▶';} }
-playBtn.addEventListener('click',()=>{ if(radarTimer){stopRadarPlay();return;}
-  playBtn.textContent='❚❚'; radarTimer=setInterval(()=>showRadarFrame((radarIdx+1)%radarFrames.length),600); });
-scrub.addEventListener('input',()=>{ stopRadarPlay(); showRadarFrame(+scrub.value); });
-$('#radarOpacity').addEventListener('input',e=>{ radarOpacity=(+e.target.value)/100;
-  const l=radarLayers[radarIdx]; if(l&&radarOn)l.setOpacity(radarOpacity); });
-$('#radarToggle').addEventListener('click',async()=>{
-  if(!radarReady){ if(!radarLoading){radarLoading=true;toast('LOADING RADAR FRAMES…');await initRadar();radarLoading=false;}
-    if(!radarReady){toast('WEATHER RADAR UNAVAILABLE','warn');return;} }
-  radarOn=!radarOn; $('#radarToggle').classList.toggle('active',radarOn);
-  radarBar.classList.toggle('hidden',!radarOn);
-  if(radarOn){showRadarFrame(radarIdx);} else{stopRadarPlay();radarLayers.forEach(l=>{if(l)map.removeLayer(l);});}
-  scheduleLayoutBottom(); });
-
-/* ================= toasts & pulse ================= */
-function toast(msg,type){ const t=document.createElement('div'); t.className='toast '+(type||''); t.textContent=msg;
-  $('#toasts').appendChild(t); setTimeout(()=>t.classList.add('bye'),3200); setTimeout(()=>t.remove(),3700); }
-function pulse(r){ const m=L.marker([r.lat,r.lng],{icon:L.divIcon({className:'pulseWrap',html:'<span class="pulseRing"></span>',iconSize:[18,18],iconAnchor:[9,9]}),interactive:false,zIndexOffset:500}).addTo(map);
-  setTimeout(()=>map.removeLayer(m),2800); }
-function focusSpot(){ if(!pendingSpot)return; const r=reports.find(x=>x.id===pendingSpot);
-  if(r){ map.setView([r.lat,r.lng],13); pulse(r); pendingSpot=null; } }
-
-/* ================= voting / bump / share ================= */
-function voteReport(id,dir){
-  const rep=reports.find(r=>r.id===id); if(!rep)return;
-  if((rep.voters||[]).includes(deviceId)){ toast('YOU ALREADY VOTED ON THIS','warn'); return; }
-  buzz(10);
-  if(syncMode){
-    const ref=db.collection('reports').doc(id);
-    db.runTransaction(t=>t.get(ref).then(d=>{
-      const data=d.data();
-      if((data.voters||[]).includes(deviceId)) throw 'dup';
-      const upd={ voters:[...(data.voters||[]),deviceId] };
-      if(dir>0) upd.ups=(data.ups||0)+1; else upd.downs=(data.downs||0)+1;
-      t.update(ref,upd);
-    })).catch(e=>{ toast(e==='dup'?'ALREADY VOTED':'VOTE FAILED — TRY AGAIN','warn'); });
-  }else{
-    rep.voters=rep.voters||[]; rep.voters.push(deviceId);
-    if(dir>0) rep.ups=(rep.ups||0)+1; else rep.downs=(rep.downs||0)+1;
-    LS.set(K_REP,reports); afterChange();
-  }
-}
-function bumpReport(id){
-  const rep=reports.find(r=>r.id===id); if(!rep)return;
-  if(cooldownRemaining()>0){ toast('COOLDOWN — WAIT '+cooldownRemaining()+'S','warn'); return; }
-  const now=Date.now(); buzz(10);
-  if(syncMode){ db.collection('reports').doc(id).update({ts:now})
-      .then(()=>{ LS.rawSet(K_LAST,String(now)); toast('MARKED AS STILL ACTIVE','ok'); })
-      .catch(()=>toast('COULD NOT REFRESH','warn')); }
-  else{ rep.ts=now; LS.rawSet(K_LAST,String(now)); LS.set(K_REP,reports); afterChange(); toast('MARKED AS STILL ACTIVE','ok'); }
-}
-function shareReport(id){
-  const url=location.origin+location.pathname+'?spot='+encodeURIComponent(id);
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url)
-      .then(()=>toast('LINK COPIED','ok')).catch(()=>prompt('Copy this link:',url)); }
-  else prompt('Copy this link:',url);
-}
-$('#feed').addEventListener('click',e=>{
-  const btn=e.target.closest('[data-action]'); if(!btn)return;
-  const item=e.target.closest('.feedItem'); if(!item)return;
-  const id=item.dataset.id, act=btn.dataset.action;
-  if(act==='up')voteReport(id,1); else if(act==='down')voteReport(id,-1);
-  else if(act==='bump')bumpReport(id); else if(act==='share')shareReport(id);
-  else if(act==='delete'){
-    if(!window.isAdmin){ toast('ADMIN ACCESS REQUIRED','warn'); return; }
-    if(!confirm('Delete this report permanently?'))return;
-    if(syncMode){
-      db.collection('reports').doc(id).delete()
-        .then(()=>toast('REPORT DELETED','ok'))
-        .catch((e)=>{ console.error('Delete error:', e); toast('DELETE FAILED: '+e.message,'warn'); });
-    }else{
-      const idx=reports.findIndex(r=>r.id===id);
-      if(idx>=0){ reports.splice(idx,1); LS.set(K_REP,reports); afterChange(); toast('REPORT DELETED','ok'); }
-    }
-  }
-});
-
-/* ================= report flow ================= */
-let targeting=false, pendingLoc=null, selStatus='parked';
-const mapEl=$('#map'), hint=$('#hint'), panel=$('#panel'), sheetHead=$('#sheetHead'),
-      reportBtn=$('#reportBtn'), cdChip=$('#cdChip'),
-      modal=$('#modal'), locBox=$('#locBox'), statusGrid=$('#statusGrid'),
-      noteIn=$('#noteIn'), submitBtn=$('#submitBtn'),
-      cdNote=$('#cdNote'), expireHint=$('#expireHint');
-function isMobile(){ return innerWidth<900; }
-function startTargeting(){ targeting=true; mapEl.classList.add('targeting'); hint.classList.remove('hidden');
-  if(isMobile()) setSheet(false); }
-function stopTargeting(){ targeting=false; mapEl.classList.remove('targeting'); hint.classList.add('hidden'); }
-function useLoc(lat,lng,pan){ const [fla,fln]=fuzz(lat,lng); pendingLoc={lat:fla,lng:fln};
-  stopTargeting(); if(pan)map.setView([fla,fln],Math.max(map.getZoom(),12)); openModal(); }
-reportBtn.addEventListener('click',e=>{ e.stopPropagation(); if(targeting){stopTargeting();return;} startTargeting(); });
-$('#hintCancel').addEventListener('click',stopTargeting);
-$('#hintGeo').addEventListener('click',()=>{
-  if(!navigator.geolocation)return toast('GEOLOCATION NOT SUPPORTED','warn');
-  navigator.geolocation.getCurrentPosition(pos=>{ const{latitude:la,longitude:ln}=pos.coords;
-    if(la<39.9||la>42.1||ln<-88.4||ln>-84.4)return toast('OUTSIDE THE NIPSCO SERVICE AREA','warn');
-    useLoc(la,ln,true); }, ()=>toast('COULD NOT GET YOUR LOCATION','warn'), {timeout:8000}); });
-map.on('click',e=>{ if(targeting) useLoc(e.latlng.lat,e.latlng.lng,false); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!modal.classList.contains('hidden'))closeModal(); else stopTargeting(); } });
-
-/* draggable bottom sheet */
-function collapsedH(){ return sheetHead.offsetHeight + 10; }
-function openH(){ return Math.round(Math.min(innerHeight*0.72, 640)); }
-function setSheet(open){
-  panel.classList.toggle('collapsed',!open);
-  if(isMobile()) panel.style.maxHeight=(open?openH():collapsedH())+'px';
-  scheduleLayoutBottom();
-}
-let sheetDrag=null;
-sheetHead.addEventListener('pointerdown',e=>{
-  if(!isMobile()||e.target.closest('#reportBtn'))return;
-  sheetDrag={y:e.clientY,h:panel.getBoundingClientRect().height,moved:false};
-  panel.style.transition='none';
-});
-sheetHead.addEventListener('pointermove',e=>{
-  if(!sheetDrag)return;
-  const dy=sheetDrag.y-e.clientY;
-  if(Math.abs(dy)>6)sheetDrag.moved=true;
-  if(!sheetDrag.moved)return;
-  panel.style.maxHeight=Math.max(collapsedH(),Math.min(openH(),sheetDrag.h+dy))+'px';
-  scheduleLayoutBottom();
-});
-function endSheet(){
-  if(!sheetDrag)return;
-  const d=sheetDrag; sheetDrag=null;
-  panel.style.transition='';
-  if(!d.moved){ setSheet(panel.classList.contains('collapsed')); return; }
-  setSheet(panel.getBoundingClientRect().height > (collapsedH()+openH())/2);
-}
-sheetHead.addEventListener('pointerup',endSheet);
-sheetHead.addEventListener('pointercancel',endSheet);
-
-function layoutBottom(){
-  if(isMobile()){
-    const h=panel.getBoundingClientRect().height;
-    document.documentElement.style.setProperty('--sheetH', Math.ceil(h)+'px');
-  }
-}
-// layoutBottomSoon is deprecated - use scheduleLayoutBottom instead
-addEventListener('resize',()=>{ if(!isMobile()) panel.style.maxHeight=''; scheduleLayoutBottom(); });
-
-function buildStatusGrid(){
-  statusGrid.innerHTML=STATUSES.map(s=>'<button type="button" class="stChip'+(s.k===selStatus?' sel':'')+'" data-k="'+esc(s.k)+'">'
-    +'<span class="d" style="background:'+esc(s.c)+'"></span>'+esc(s.label)+'<small>~'+esc(TTL_MIN[s.k])+'m</small></button>').join('');
-  statusGrid.querySelectorAll('.stChip').forEach(b=>b.addEventListener('click',()=>{
-    selStatus=b.dataset.k; buzz(8);
-    statusGrid.querySelectorAll('.stChip').forEach(x=>x.classList.toggle('sel',x===b));
-    expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.'; }));
-}
-function openModal(){
-  locBox.innerHTML='≈ '+pendingLoc.lat.toFixed(3)+', '+pendingLoc.lng.toFixed(3)
-    +'<br>'+esc(nearestCity(pendingLoc.lat,pendingLoc.lng))+' <span style="opacity:.6">(FUZZED ±400 M)</span>';
-  locBox.classList.add('has'); buildStatusGrid();
-  expireHint.textContent='AUTO-EXPIRES IN ~'+TTL_MIN[selStatus]+' MINUTES.';
-  modal.classList.remove('hidden'); tickCooldown();
-}
-function closeModal(){ modal.classList.add('hidden'); pendingLoc=null; noteIn.value=''; }
-$('#modalClose').addEventListener('click',closeModal);
-modal.addEventListener('click',e=>{ if(e.target===modal)closeModal(); });
-
-/* Announcement bar close */
-$('#announcementClose').addEventListener('click',()=>{
-  const activeAnnouncement = announcements.length > 0 ? announcements[0] : null;
-  if(activeAnnouncement){
-    dismissedAnnouncementIds.add(activeAnnouncement.id);
-  }
-  $('#announcementBar').classList.add('hidden');
-});
-
-/* Admin Panel */
-let adminStyle='normal';
-window.selectAdminStyle=function(btn,style){
-  adminStyle=style;
-  document.querySelectorAll('#adminPanel .vBtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-};
-$('#adminClose').addEventListener('click',()=>{$('#adminPanel').classList.add('hidden');});
-$('#adminSend').addEventListener('click',()=>{
-  const msg=$('#adminMsgText').value.trim();
-  if(!msg){toast('ENTER A MESSAGE FIRST','warn');return;}
-  const dur=parseInt($('#adminDuration').value)||60;
-  broadcastMessage(msg,adminStyle,dur).then(()=>{
-    $('#adminMsgText').value='';
-    $('#adminPanel').classList.add('hidden');
-  });
-});
-document.addEventListener('keydown',e=>{
-  if(e.ctrlKey&&e.key==='m'){e.preventDefault();$('#adminPanel').classList.toggle('hidden');}
-});
-
-function cooldownRemaining(){
-  let last=parseInt(LS.raw(K_LAST)||'0',10);
-  if(syncMode){ const mine=reports.filter(r=>r.deviceId===deviceId).reduce((m,r)=>Math.max(m,r.ts||0),0); last=Math.max(last,mine); }
-  return Math.max(0, COOLDOWN_SEC - Math.floor((Date.now()-last)/1000));
-}
-function capReached(){
-  if(syncMode) return reports.filter(r=>r.deviceId===deviceId && Date.now()-r.ts<36e5).length>=HOURLY_CAP;
-  return LS.get(K_TIMES,[]).filter(t=>Date.now()-t<36e5).length>=HOURLY_CAP;
-}
-function tickCooldown(){
-  const rem=cooldownRemaining(), cap=capReached();
-  if(rem>0){ cdChip.textContent='⏳'+rem+'s'; cdChip.classList.remove('hidden'); }
-  else{ cdChip.classList.add('hidden'); }
-  reportBtn.firstElementChild.textContent=(cap&&rem===0)?'LIMIT REACHED':'REPORT TRUCK';
-  if(!modal.classList.contains('hidden')){
-    if(rem>0){ submitBtn.disabled=true; submitBtn.textContent='NEXT REPORT IN '+rem+'S'; }
-    else if(cap){ submitBtn.disabled=true; submitBtn.textContent='HOURLY LIMIT REACHED'; }
-    else{ submitBtn.disabled=false; submitBtn.textContent='SUBMIT SIGHTING'; }
-    cdNote.textContent=rem>0?'ONE REPORT PER MINUTE PER DEVICE.':cap?'YOU REACHED THE '+HOURLY_CAP+'-REPORTS-PER-HOUR LIMIT.'
-      :'RATE LIMITED: 1/MIN · '+HOURLY_CAP+'/HR. LOCATIONS ARE FUZZED FOR PRIVACY.';
-  }
-  // Update next refresh countdown
-  const nextRefEl = document.getElementById('nextRefresh');
-  if(nextRefEl && nextRefreshTime > 0){
-    const msLeft = nextRefreshTime - Date.now();
-    if(msLeft <= 0){
-      nextRefEl.textContent = 'REFRESHING...';
-    }else{
-      const sec = Math.ceil(msLeft / 1000);
-      nextRefEl.textContent = 'NEXT: '+sec+'s';
-    }
-  }
-}
-setInterval(tickCooldown,500);
-
-submitBtn.addEventListener('click',async()=>{
-  const rem=cooldownRemaining();
-  if(rem>0)return toast('COOLDOWN — WAIT '+rem+'S','warn');
-  if(capReached())return toast('HOURLY REPORT LIMIT REACHED','warn');
-  if(!pendingLoc)return toast('NO LOCATION SELECTED','warn');
-  const safeNote = esc(noteIn.value.trim().slice(0,120));
-  const rep={ lat:pendingLoc.lat, lng:pendingLoc.lng, status:selStatus,
-    note:safeNote, ts:Date.now(), deviceId:deviceId,
-    ups:0, downs:0, voters:[] };
-  LS.rawSet(K_LAST,String(rep.ts));
-  const times=LS.get(K_TIMES,[]).filter(t=>Date.now()-t<36e5); times.push(rep.ts); LS.set(K_TIMES,times);
-  buzz(20);
-  if(syncMode){
-    submitBtn.disabled=true; submitBtn.textContent='BROADCASTING…';
-    try{ await db.collection('reports').add(rep); }
-    catch(e){ submitBtn.disabled=false; submitBtn.textContent='SUBMIT SIGHTING';
-      toast('COULD NOT REACH THE LIVE DATABASE — CHECK FIRESTORE RULES','warn'); return; }
-    closeModal(); pulse(rep);
-    toast('SIGHTING BROADCAST — EXPIRES IN ~'+TTL_MIN[rep.status]+' MIN','ok');
-  }else{
-    rep.id=Date.now().toString(36); reports.push(rep); LS.set(K_REP,reports);
-    afterChange(); closeModal(); pulse(rep); toast('SIGHTING LOGGED (LOCAL DEMO MODE)','ok');
-  }
-});
-
-/* ================= feed & stats ================= */
-
-/* Admin: Broadcast message to all users (call from browser console) */
-window.broadcastMessage = broadcastMessage;
-
-// Cache last rendered feed HTML to avoid redundant DOM operations
-let lastFeedHtml = null;
-
-function renderFeed(){
-  const now=Date.now();
-  // Get active announcements
-  const activeAnnouncements=announcements.filter(a=>{
-    const expires=a.expires||0;
-    return !a.hidden && (expires===0 || now<expires);
-  });
-  
-  // Combine announcements and reports, sort by timestamp DESCENDING (newest at top)
-  const combined=[...activeAnnouncements.map(a=>({...a,_type:'announcement'})), ...reports];
-  const list=combined.sort((a,b)=> {
-    if(a._type==='announcement' && b._type!=='announcement') return -1;
-    if(b._type==='announcement' && a._type!=='announcement') return 1;
-    return b.ts-a.ts; // descending: newest first
-  });
-  
-  // Generate feed hash for caching
-  const newFeedHash = list.map(x => x.id || x.ts).join('|') + '|' + list.length;
-  if(newFeedHash === lastFeedHtml) return; // Skip if nothing changed
-  lastFeedHtml = newFeedHash;
-
-  $('#feedCount').textContent = list.length ? list.length + ' ACTIVE' : '';
-  if(!list.length){ $('#feed').innerHTML='<div class="empty"><div class="eGlyph">⌖</div><b>NO ACTIVE SIGHTINGS</b>'
-    +'<p>REPORTS EXPIRE WITHIN ABOUT AN HOUR.<br>HIT REPORT TRUCK TO LOG THE FIRST ONE.</p></div>'; return; }
-  
-  $('#feed').innerHTML=list.map(r=>{
-    // Check if this is an announcement
-    if(r._type==='announcement'){
-      const style=r.style||'normal';
-      const bg=style==='urgent'?'var(--hot)':'var(--accent)';
-      const color=style==='urgent'?'#fff':'var(--accentInk)';
-      return '<div class="feedItem" style="border-left:4px solid '+bg+';background:'+bg+'22">'+
-        '<div class="fTop"><b>📢 ANNOUNCEMENT</b><time>'+ago(r.ts)+'</time></div>'+
-        '<div class="fLoc" style="color:'+color+';font-weight:500">'+esc(r.message||'')+'</div>'+
-        '</div>';
-    }
-    
-    // Regular report rendering
-    const st=STATUSES.find(s=>s.k===r.status)||STATUSES[4];
-    const remMs=ttlOf(r)-(now-r.ts), mins=Math.max(0,Math.ceil(remMs/60000));
-    const flg=isFlagged(r), boost=(r.ups||0)>=2&&!flg;
-    return '<div class="feedItem'+(flg?' flagged':'')+(boost?' boosted':'')+'" data-id="'+esc(r.id)+'" style="border-left-color:'+st.c+'">'
-      +'<div class="fTop"><b>'+st.label+'</b><time>'+ago(r.ts)+'</time></div>'
-      +'<div class="fLoc">'+esc(nearestCity(r.lat,r.lng))+'</div>'
-      +'<div class="fMeta"><span class="exp'+(mins<10?' warn':'')+'">⏳ '+mins+'M</span>'
-      +(flg?'<span class="flagTag">HIDDEN BY COMMUNITY</span>':
-        '<button class="vBtn up" data-action="up" title="Confirm sighting">▲ '+(r.ups||0)+'</button>'
-        +'<button class="vBtn down" data-action="down" title="Wrong / spam">▼ '+(r.downs||0)+'</button>'
-        +'<button class="vBtn" data-action="bump" title="Still here — refresh timer">⟳ STILL HERE</button>'
-        +'<button class="vBtn share" data-action="share" title="Copy link">⤴</button><button class="vBtn" data-action="delete" title="Delete report (admin only)" style="margin-left:auto;color:var(--hot);border-color:var(--hot)">🗑</button>')
-      +'</div>'+(r.note?'<p class="fNote">'+esc(r.note)+'</p>':'')+'</div>';
-  }).join('');
-}
-function renderStats(){
-  const active=reports.filter(r=>!isFlagged(r));
-  $('#statLive').textContent=active.length; $('#statTotal').textContent=active.length;
-  const cells={}; active.forEach(r=>{ const k=Math.round(r.lat/0.01)+':'+Math.round(r.lng/0.01); cells[k]=(cells[k]||0)+1; });
-  const hot=Object.values(cells).filter(c=>c>=2).length;
-  $('#statHot').textContent=hot; $('#statHotTop').textContent=hot;
-  if(active.length){ const next=Math.min(...active.map(r=>ttlOf(r)-(Date.now()-r.ts)));
-    $('#statNext').textContent=Math.max(0,Math.ceil(next/60000))+'m'; }
-  else $('#statNext').textContent='—';
-}
-// Cache last known state to avoid redundant renders
-let lastExpiryCheckState = null;
-
-setInterval(()=>{ 
-  const before=reports.length;
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
-  if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
-  
-  // Only refresh if report count actually changed
-  const newState = reports.length + '|' + reports.map(r=>r.id+r.ts).join(',');
-  if(newState !== lastExpiryCheckState){
-    lastExpiryCheckState = newState;
-    refreshLayers(); renderFeed(); renderStats();
-  }
-},45000);
-
-$('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
-$('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
-let trafficOn = false;
-const trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20, attribution:'© Google' });
-$('#trafficToggle').addEventListener('click',()=>{ 
-  trafficOn = !trafficOn; 
-  $('#trafficToggle').classList.toggle('active', trafficOn);
-  if(trafficOn) trafficLayer.addTo(map);
-  else map.removeLayer(trafficLayer);
-});
-
-/* ================= boot ================= */
-applyTheme();
-if(syncMode){ startSync(); startAnnouncementSync(); }
-else{ reports=LS.get(K_REP,[]).filter(r=>r&&!String(r.id).startsWith('s'));
-  reports.forEach(r=>{r.ups=r.ups||0;r.downs=r.downs||0;r.voters=r.voters||[];});
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r)); afterChange(); }
-tickCooldown(); initRadar();
-updZoom();
-if(isMobile()) panel.style.maxHeight=collapsedH()+'px';
-scheduleLayoutBottom();
-
-// Cleanup polling timers when page is closed to prevent background reads
-window.addEventListener('beforeunload', () => {
-  if(announcementPollTimer) clearInterval(announcementPollTimer);
-  if(reportsPollTimer) clearInterval(reportsPollTimer);
-});
-
-// Onboarding for first-time users
-const hasSeenOnboarding=LS.raw('seenOnboarding');
-if(!hasSeenOnboarding){
-  setTimeout(()=>{
-    const modal=$('#modal');
-    modal.classList.remove('hidden');
-    modal.querySelector('.modalCard').innerHTML=
-      '<button id="modalClose" aria-label="Close">✕</button>'+
-      '<h3><span class="tick"></span>Welcome!</h3>'+
-      '<p style="margin:16px 0;line-height:1.7;color:var(--text)">This is a community truck tracker for NIPSCO service areas in Northern Indiana.</p>'+
-      '<div style="background:var(--panel2);padding:14px;border:1px solid var(--line);margin:14px 0">'+
-        '<b style="display:block;margin-bottom:8px;font-size:13px;color:var(--accentTxt)">How it works:</b>'+
-        '<ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px;color:var(--muted)">'+
-          '<li>TAP <b style="color:var(--text)">REPORT TRUCK</b> to log a sighting</li>'+
-          '<li>Use <b style="color:var(--text)">HEAT</b> to see density hotspots</li>'+
-          '<li>Toggle <b style="color:var(--text)">BUBBLES</b> for cluster view — click bubbles to see details</li>'+
-          '<li>Reports auto-expire in ~1 hour</li>'+
-          '<li>▲ confirms, ▼ flags wrong reports</li>'+
-        '</ul>'+
-      '</div>'+
-      '<button id="gotItBtn" style="width:100%;border:2px solid var(--accent);padding:15px;font-weight:600;font-size:15px;letter-spacing:.2em;color:var(--accentInk);background:var(--accent);text-transform:uppercase;margin-top:8px">GOT IT</button>';
-    document.getElementById('gotItBtn').onclick=()=>{
-      LS.rawSet('seenOnboarding','1');
-      modal.classList.add('hidden');
-      // Restore original modal content
-      location.reload();
-    };
-  },1500);
-}
-
-setTimeout(()=>{ $('#boot').classList.add('done');
-  if(syncMode) toast('CONNECTED TO LIVE DATABASE','ok'); },750);
-</script>
+<!-- Application logic loaded from shared/app.js -->
+<script src="shared/app.js"></script>
 </body>
 </html>
