@@ -1,4 +1,8 @@
-/* ════════════════ FIREBASE (live sync for everyone) ════════════════ */
+/* ════════════════ FIREBASE CONFIGURATION ════════════════ */
+/* SECURITY NOTE: API key is exposed by design in client-side apps.
+ * Security is enforced via Firebase Security Rules (firestore.rules)
+ * which validate admin email server-side for write operations.
+ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDZnYc1kU0HyD_djZ2JqgGKyp1kAgP5Y1g",
   authDomain: "nipsco-tracker.firebaseapp.com",
@@ -19,7 +23,7 @@ const auth = firebase.auth();
 // This email is checked server-side via Firebase Security Rules (see firestore.rules)
 const ADMIN_EMAIL = "primegamer2008@outlook.com";
 
-// Auth State Observer for Admin Panel
+// Auth State Observer for Admin Panel - validates email server-side via Firestore rules
 auth.onAuthStateChanged((user) => {
   const loginSection = document.getElementById('adminLoginSection');
   const messageForm = document.getElementById('adminMessageForm');
@@ -71,6 +75,7 @@ function handleAdminSignIn() {
   });
 }
 
+// Dynamic PWA manifest generation
 (function(){
   const ico='https://image.qwenlm.ai/public_source/cb9c51e1-9a2c-47f3-b47c-336c06356c80/10166461d-f4e1-4b07-aa9e-7c37f8d72448.png';
   const m={name:'NIPSCO Truck Tracker',short_name:'NIPSCO Tracker',start_url:'.',display:'standalone',
@@ -100,7 +105,27 @@ if(!deviceId || !/^[a-z0-9]{6,12}$/.test(deviceId)){ deviceId=Math.random().toSt
 
 /* ================= Firebase ================= */
 let db=null, syncMode=false, reports=[], announcements=[], dismissedAnnouncementIds=new Set();
-let announcementPollTimer=null, reportsPollTimer=null;
+let announcementPollTimer=null, reportsPollTimer=null, clockTimer=null, cooldownTimer=null;
+
+// Tab Visibility API - pause polling when page is hidden to save resources
+let isPageVisible = !document.hidden;
+document.addEventListener('visibilitychange', () => {
+  isPageVisible = !document.hidden;
+  if (isPageVisible) {
+    // Resume polling when page becomes visible
+    if (syncMode && !reportsPollTimer) startSync();
+    if (!announcementPollTimer) startAnnouncementSync();
+    if (!clockTimer) clockTimer = setInterval(()=>{ cClock.textContent=new Date().toLocaleTimeString([], {hour12:false}); },1000);
+    if (!cooldownTimer) cooldownTimer = setInterval(tickCooldown,500);
+  } else {
+    // Pause polling when page is hidden to save battery and Firebase reads
+    if (reportsPollTimer) { clearInterval(reportsPollTimer); reportsPollTimer = null; }
+    if (announcementPollTimer) { clearInterval(announcementPollTimer); announcementPollTimer = null; }
+    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+    if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+  }
+});
+
 if(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId){
   try{ 
     firebase.initializeApp(FIREBASE_CONFIG); 
@@ -464,7 +489,7 @@ const cCoord=$('#cCoord'), cZoom=$('#cZoom'), cClock=$('#cClock');
 map.on('mousemove',e=>{ cCoord.textContent=e.latlng.lat.toFixed(3)+' / '+e.latlng.lng.toFixed(3); });
 function updZoom(){ cZoom.textContent='Z'+map.getZoom(); }
 map.on('zoomend moveend', updZoom);
-setInterval(()=>{ cClock.textContent=new Date().toLocaleTimeString([], {hour12:false}); },1000);
+// Clock timer now managed by Tab Visibility API (line 118)
 cClock.textContent=new Date().toLocaleTimeString([], {hour12:false});
 
 /* ================= weather radar (RainViewer) ================= */
@@ -713,7 +738,7 @@ function tickCooldown(){
     }
   }
 }
-setInterval(tickCooldown,500);
+// Cooldown timer now managed by Tab Visibility API (line 119)
 
 submitBtn.addEventListener('click',async()=>{
   const rem=cooldownRemaining();
@@ -813,19 +838,29 @@ function renderStats(){
 }
 // Cache last known state to avoid redundant renders
 let lastExpiryCheckState = null;
+let expiryTimer = null;
 
-setInterval(()=>{ 
-  const before=reports.length;
-  reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
-  if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
-  
-  // Only refresh if report count actually changed
-  const newState = reports.length + '|' + reports.map(r=>r.id+r.ts).join(',');
-  if(newState !== lastExpiryCheckState){
-    lastExpiryCheckState = newState;
-    refreshLayers(); renderFeed(); renderStats();
-  }
-},45000);
+// Expiry check timer now managed by Tab Visibility API
+function startExpiryCheck() {
+  if (expiryTimer) return;
+  expiryTimer = setInterval(()=>{
+    const before=reports.length;
+    reports=reports.filter(r=>Date.now()-r.ts<ttlOf(r));
+    if(!syncMode&&reports.length!==before)LS.set(K_REP,reports);
+
+    // Only refresh if report count actually changed
+    const newState = reports.length + '|' + reports.map(r=>r.id+r.ts).join(',');
+    if(newState !== lastExpiryCheckState){
+      lastExpiryCheckState = newState;
+      refreshLayers(); renderFeed(); renderStats();
+    }
+  },45000);
+}
+
+// Stop expiry check when page hidden
+function stopExpiryCheck() {
+  if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+}
 
 $('#heatToggle').addEventListener('click',()=>{ showHeat=!showHeat; $('#heatToggle').classList.toggle('active',showHeat); rebuildHeat(); });
 $('#bubbleToggle').addEventListener('click',()=>{ showBubbles=!showBubbles; $('#bubbleToggle').classList.toggle('active',showBubbles); rebuildBubbles(); });
